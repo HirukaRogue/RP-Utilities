@@ -1,4 +1,4 @@
-TOKEN = "(INSERT BOT TOKEN HERE)"
+TOKEN = ""
 
 def return_token():
     return TOKEN
