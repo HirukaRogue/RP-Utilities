@@ -21,7 +21,7 @@ class Bot(commands.Bot):
 
     async def close(self) -> None:
         await super().close()
-        await self.database.close()
+        # await self.database.close()
 
 #asyncio.run(Bot.main(), debug=False)
 Bot(command_prefix='rpu->', intents=discord.Intents.all()).run(bot_token.return_token())

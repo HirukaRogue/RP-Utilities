@@ -49,7 +49,7 @@ class Database:
             print("Cannot connect to Database!")
 
     async def connect(self, connection_uri: str, /) -> None:
-        self.dev_client = await motor.motor_asyncio.AsyncIOMotorClient(connection_uri)
+        self.dev_client = motor.motor_asyncio.AsyncIOMotorClient(connection_uri)
 
-    async def close(self) -> None:
-        await self.connection.close()
+    # async def close(self) -> None:
+    #     await self.connection.close()
