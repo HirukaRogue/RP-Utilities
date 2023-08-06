@@ -159,6 +159,13 @@ class Roll(commands.Cog):
                         result.append("+")
                     else:
                         result.append("0")
+            elif pivot[1] == "c" or pivot[1] == "C":
+                pivot2 = [random.randint(0, 1) for _ in range(int(pivot[0]))]
+                for i in pivot2:
+                    if i == 0:
+                        result.append("Heads")
+                    else:
+                        result.append("Tails")
             else:
                 result = [random.randint(1, int(pivot[1])) for _ in range(int(pivot[0]))]
         else:
@@ -171,6 +178,8 @@ class Roll(commands.Cog):
                     total = total+1
                 elif x == "-":
                     total = total-1
+                elif x == "Heads" or x == "Tails":
+                    total = total
                 else:
                     total = total+x
         meta = [result, total]
