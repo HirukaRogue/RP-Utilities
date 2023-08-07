@@ -20,6 +20,7 @@ class Bot(commands.Bot):
             case_insensitive=True
         )
         self.database = Database()
+        self.db_loop = self.database.get_io_loop()
         print("Bot Connected!")
 
     async def setup_hook(self) -> None:
@@ -32,7 +33,7 @@ class Bot(commands.Bot):
 
     async def close(self) -> None:
         await super().close()
-        # await self.database.close()
+        await self.database.close()
 
 #asyncio.run(Bot.main(), debug=False)
 if __name__ is "__main__":
