@@ -41,6 +41,9 @@ import motor.motor_asyncio
 class Database:
     def __init__(self) -> None:
         self.dev_client: motor.motor_asyncio.AsyncIOMotorClient | None = None
+
+    async def connect(self, connection_uri: str, /) -> None:
+        self.dev_client = motor.motor_asyncio.AsyncIOMotorClient(connection_uri)
         if self.dev_client is not None:
             self.database = self.dev_client.rpu_database
             print("Database connected!")
@@ -48,8 +51,11 @@ class Database:
             self.database = None
             print("Cannot connect to Database!")
 
-    async def connect(self, connection_uri: str, /) -> None:
-        self.dev_client = motor.motor_asyncio.AsyncIOMotorClient(connection_uri)
+    async def close(self) -> None:
+        await self.dev_client.close()
 
-    # async def close(self) -> None:
-    #     await self.connection.close()
+    async def set_prefix(self, *, guild_id: int, prefix: str) -> None:
+        await self.database.prefixes.insert_one({
+            'guild_id': guild_id,
+            'prefix' : prefix
+        })
