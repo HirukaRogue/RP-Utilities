@@ -52,7 +52,7 @@ class Database:
             print("Cannot connect to Database!")
 
     async def close(self) -> None:
-        await self.dev_client.close()
+        self.dev_client.close()
 
     async def set_prefix(self, *, guild_id: int, prefix: str) -> None:
         if await self.db.prefixes.search_one({'guild_id':guild_id}) is None:
