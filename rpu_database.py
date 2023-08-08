@@ -58,10 +58,26 @@ class Database:
         if await self.db.prefixes.search_one({'guild_id':guild_id}) is None:
             await self.db.prefixes.insert_one({
                 'guild_id': guild_id,
-                'prefix' : prefix
+                'prefix': prefix
             })
         else:
             await self.db.prefixes.update_one({
                 'guild_id': guild_id,
-                'prefix' : prefix
+                'prefix': prefix
             })
+
+    async def remove_prefix(self, *, guild_id: int, prefix: str) -> None:
+        document = await self.db.prefixes.search_one({'guild_id': guild_id})
+
+        if document is not None:
+            await self.db.prefixes.delete_one({'guild_id': guild_id})
+
+    async def get_prefix(self, *, guild_id: int) -> str | None:
+        document = await self.db.prefixes.search_one({'guild_id': guild_id})
+        
+        if document is not None:
+            return document["prefix"]
+        else:
+            return None
+
+
