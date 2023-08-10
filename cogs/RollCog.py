@@ -4,7 +4,7 @@ import random
 from sympy import *
 import re
 
-class Roll(commands.Cog):
+class RollCog(commands.Cog):
     def __init__(self, client):
         self.client = client
 
@@ -186,4 +186,4 @@ class Roll(commands.Cog):
         return meta        
 
 async def setup(client):
-    await client.add_cog(Roll(client))
+    await client.add_cog(RollCog(client))

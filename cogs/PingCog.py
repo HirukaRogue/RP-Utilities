@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-class Ping(commands.Cog):
+class PingCog(commands.Cog):
     def __init__(self, client):
         self.client = client
 
@@ -16,4 +16,4 @@ class Ping(commands.Cog):
         await ctx.send(f"Pong: {bot_latency} ms")
 
 async def setup(client):
-    await client.add_cog(Ping(client))
+    await client.add_cog(PingCog(client))

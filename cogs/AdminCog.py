@@ -5,7 +5,7 @@ from discord.ext.commands import Context
 import os
 import sys
 
-class Admin(commands.Cog):
+class AdminCog(commands.Cog):
     def __init__(self, client):
         self.client = client
 
@@ -38,4 +38,4 @@ class Admin(commands.Cog):
         )
 
 async def setup(client):
-    await client.add_cog(Admin(client))
+    await client.add_cog(AdminCog(client))

@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-class Action(commands.Cog):
+class ActionCog(commands.Cog):
     def __init__(self, client):
         self.client = client
 
@@ -14,4 +14,4 @@ class Action(commands.Cog):
         await ctx.send(f"Interacting")
 
 async def setup(client):
-    await client.add_cog(Action(client))
+    await client.add_cog(ActionCog(client))
