@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord.ext import menus
-import rpu_database
 from copy import deepcopy
 
 class CharactersCog(commands.Cog):
@@ -67,7 +66,8 @@ class CharactersCog(commands.Cog):
 
                     pages.append(emb)
 
-        pages = embed if pages is None else pages
+        pages = [embed] if len(pages) == 0 else pages
+        print(pages)
         menu_formatter = List_source(pages, per_page=1)
         
         result_menu = PageMenu(menu_formatter)
