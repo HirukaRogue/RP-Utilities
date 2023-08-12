@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord.ext import menus
 from copy import deepcopy
+from dataclasses import dataclass
 
 class CharactersCog(commands.Cog):
     def __init__(self, client):
@@ -57,9 +58,10 @@ class CharactersCog(commands.Cog):
                     page_count = page_count + 1
                     emb = deepcopy(embed)
                     
-                    emb.add_field(name="Name", value = [f"{x[name]}\n" if x is not page[4] else x[name] for x in page][0])
-                    emb.add_field(name="Prompt", value = [f"{x[prompt]}\n" if x is not page[4] else x[name] for x in page][0])
-                    # emb.add_field(name="profile pic", value = [f"{x[pfp]}\n" for x in page])
+                    print("\n".join([str(x["name"]) for x in page]))
+                    # emb.add_field(name="Name", value = "\n".join([str(x["name"]) for x in page]))
+                    # emb.add_field(name="Prompt", value = [f"{x[prompt]}\n" if x is not page[display-1] else x[name] for x in page])
+                    # emb.add_field(name="profile pic", value = [f"{x[pfp]}\n" if x is not page[display-1] else x[pfp] for x in page])
                     emb.set_footer(text=f"Page {page_count}/{int(len(search_result)/display)}")
 
                     page = []
@@ -77,7 +79,7 @@ class CharactersCog(commands.Cog):
     async def _character_default_create(self, ctx, name: str, prompt: str, image: str | None):
         user = ctx.author.id
         
-        response = "Error, the character with this prompt already exist." if await ctx.bot.database.register_default_character(user, name, prompt, image) else "Character created."
+        response = "Error, the character with this prompt already exist." if await ctx.bot.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=image) else "Character created."
 
         await ctx.send(response)
 
@@ -87,7 +89,7 @@ class CharactersCog(commands.Cog):
         user = ctx.user.id
         url = image_1.url if image_1 else image_2
         
-        response = "Error, the character with this prompt already exist." if await ctx.bot.database.register_default_character(user, name, prompt, url) else "Character created."
+        response = "Error, the character with this prompt already exist." if await ctx.bot.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=url) else "Character created."
 
         await ctx.send(response)
 
@@ -96,12 +98,37 @@ class CharactersCog(commands.Cog):
         await ctx.send("Edited")
 
     @_character_default.command(name="delete", aliases = ["del"])
-    async def _character_default_delete(self, ctx):
-        await ctx.send("Deleted")
+    async def _character_default_delete(self, ctx, deleting_prompt: str):
+        user = ctx.author.id
+
+        # result = await ctx.bot.database.delete_default_character(user_id=user, name=deleting_prompt)
+        # if result is "ERROR" or result:
+        #     ctx.bot.database.search_default_character(user_id=user, name=deleting_prompt)
+
+        # if result is "ERROR":
+        #     await ctx.send("Character not found.")
+        # if result is "SUCESS":
+        #     await ctx.send("Character deleted.")
+        # else:
+        #     embed = discord.Embed(
+        #     title="More than 1 result was found",
+        #     description="Click a link to select one"
+        #     )
+        #     embed.add_field(name="Name", value= [i["name"] for i in result])
+        #     embed.set_author(name="RP Utilities")
 
 async def setup(client):
     await client.add_cog(CharactersCog(client))
 
+class Character:
+    name: str
+    prompt: str
+    image: str
+
+    def set_values(self, doc):
+        self.name: doc['name']
+        self.prompt: doc['prompt_prefix']
+        self.image: doc['image_url']
 
 class PageMenu(menus.MenuPages):
     

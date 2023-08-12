@@ -126,6 +126,7 @@ class Database:
                 await self.db.characters.delete_one({'user_id': user_id, 'name': name})
             elif prompt_prefix:
                 await self.db.characters.delete_one({'user_id': user_id, 'prompt_prefix': prompt_prefix})
+            return "SUCESS"
         elif documents:
             return documents
         else:
