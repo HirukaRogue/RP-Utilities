@@ -60,14 +60,49 @@ class Database:
     # This function will search docs using user ID, character name and/or prompt_prefix
     async def search_default_character(self, *, user_id: int, name: str | None, prompt_prefix: str | None) -> None:
         documents = {}
+        init = True
         if name:
-            documents =  await self.db.characters.find_many([{'user_id': user_id, 'name': name}])
+            cursor = self.db.characters.find({'user_id': user_id, 'name': name}, no_cursor_timeout = True)
+            while (await cursor.fetch_next):
+                grid_out = cursor.next_object()
+                data = await grid_out.read()
+                if init:
+                    documents = data
+                    init = False
+                else:
+                    documents = documents | data
         elif prompt_prefix:
-            documents =  await self.db.characters.find_many([{'user_id': user_id, 'prompt_prefix': prompt_prefix}])
+            cursor = self.db.characters.find({'user_id': user_id, 'prompt_prefix': prompt_prefix}, no_cursor_timeout = True)
+            while (await cursor.fetch_next):
+                grid_out = cursor.next_object()
+                data = await grid_out.read()
+                if init:
+                    documents = data
+                    init = False
+                else:
+                    documents = documents | data
         elif name and prompt_prefix:
-            documents =  await self.db.characters.find_many([{'user_id': user_id, 'name': name,'prompt_prefix': prompt_prefix}])
+            cursor = self.db.characters.find({'user_id': user_id, 'name': name,'prompt_prefix': prompt_prefix}, no_cursor_timeout = True)
+            while (await cursor.fetch_next):
+                grid_out = cursor.next_object()
+                data = await grid_out.read()
+                if init:
+                    documents = data
+                    init = False
+                else:
+                    documents = documents | data
+        else:
+            cursor = self.db.characters.find({'user_id': user_id}, no_cursor_timeout = True)
+            while (await cursor.fetch_next):
+                grid_out = cursor.next_object()
+                data = await grid_out.read()
+                if init:
+                    documents = data
+                    init = False
+                else:
+                    documents = documents | data
         
-        return documents    
+        return documents if documents else None
 
     # this function will register the newly created character
     async def register_default_character(self, *, user_id: int, name: str, prompt_prefix: str, image: str | None) -> None:
@@ -96,7 +131,7 @@ class Database:
         else:
             return "ERROR"
 
-    # this function will update any stuffs related to the character, image, name or prompt_prefix
+    # this function will update any stuffs related to the character
     async def update_default_character(self, *, user_id: int, old_name: str | None, old_prompt_prefix: str | None, new_name: str | None, new_prompt_prefix, new_image: str | None) -> None:
         documents = self.search_default_character(self, user_id, old_name, old_prompt_prefix)
         
