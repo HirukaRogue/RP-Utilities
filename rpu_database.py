@@ -59,50 +59,30 @@ class Database:
 
     # This function will search docs using user ID, character name and/or prompt_prefix
     async def search_default_character(self, *, user_id: int, name: str | None, prompt_prefix: str | None) -> None:
-        documents = {}
+        documents = list()
         init = True
         if name:
             cursor = self.db.characters.find({'user_id': user_id, 'name': name}, no_cursor_timeout = True)
             while (await cursor.fetch_next):
-                grid_out = cursor.next_object()
-                data = await grid_out.read()
-                if init:
-                    documents = data
-                    init = False
-                else:
-                    documents = documents | data
+                data = cursor.next_object()
+                documents.append(data)
         elif prompt_prefix:
             cursor = self.db.characters.find({'user_id': user_id, 'prompt_prefix': prompt_prefix}, no_cursor_timeout = True)
             while (await cursor.fetch_next):
-                grid_out = cursor.next_object()
-                data = await grid_out.read()
-                if init:
-                    documents = data
-                    init = False
-                else:
-                    documents = documents | data
+                data = cursor.next_object()
+                documents.append(data)
         elif name and prompt_prefix:
             cursor = self.db.characters.find({'user_id': user_id, 'name': name,'prompt_prefix': prompt_prefix}, no_cursor_timeout = True)
             while (await cursor.fetch_next):
-                grid_out = cursor.next_object()
-                data = await grid_out.read()
-                if init:
-                    documents = data
-                    init = False
-                else:
-                    documents = documents | data
+                data = cursor.next_object()
+                documents.append(data)
         else:
             cursor = self.db.characters.find({'user_id': user_id}, no_cursor_timeout = True)
             while (await cursor.fetch_next):
-                grid_out = cursor.next_object()
-                data = await grid_out.read()
-                if init:
-                    documents = data
-                    init = False
-                else:
-                    documents = documents | data
+                data = cursor.next_object()
+                documents.append(data)
         
-        return documents if documents else None
+        return documents if documents[0] is not None else None
 
     # this function will register the newly created character
     async def register_default_character(self, *, user_id: int, name: str, prompt_prefix: str, image: str | None) -> None:

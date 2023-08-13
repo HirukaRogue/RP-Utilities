@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord.ext import menus
 from copy import deepcopy
-from dataclasses import dataclass
+from urllib.parse import urlparse
 
 class CharactersCog(commands.Cog):
     def __init__(self, client):
@@ -28,48 +28,76 @@ class CharactersCog(commands.Cog):
     async def _character_search(self, ctx, search: str | None):
         user = ctx.author.id
         prompt_result = f"Your result with {search}" if search else "All your characters"
+        search_result = list()
 
-        search_result = await ctx.bot.database.search_default_character(user_id=user, name=search, prompt_prefix=None)
-        search_pivot = await ctx.bot.database.search_default_character(user_id=user, name=None, prompt_prefix=search)
-        search_result = search_pivot | search_result if search_result and search_pivot else search_result
-        search_result = await ctx.bot.database.search_default_character(user_id=user, name=None, prompt_prefix=None) if search_result is None else search_result
+        if search is None:
+            search_result = await ctx.bot.database.search_default_character(user_id=user, name=None, prompt_prefix=None)
         
+        else:
+            search_pivot = await ctx.bot.database.search_default_character(user_id=user, name=search, prompt_prefix=None)
+            if search_pivot:
+                search_result = search_pivot
+
+            search_pivot = await ctx.bot.database.search_default_character(user_id=user, name=None, prompt_prefix=search)
+            if  search_pivot and search_result[0] is None:
+                search_result = search_pivot
+            elif search_pivot:
+                search_result = search_pivot + search_result
+
+
         prompt_result = "No results found" if search_result is None else prompt_result
-        pages = []
+        pages = list()
         embed = discord.Embed(
             title="Search Result",
             description=prompt_result
         )
         embed.set_author(name="RP Utilities")
         
-        page = []
-        
-        display = 10
-        if search_result is not None:
-            page_count = 0
-            for num,i in enumerate(search_result):
-                name = i["name"]
-                prompt = i["prompt_prefix"]
-                pfp = i["image_url"]
 
-                page.append(name,prompt,pfp)
+        display = 1
+        if search_result[0] is not None:
+            page_count = 0
+            page = list()
+
+            for num,i in enumerate(search_result):
+                keys = list(i.keys())
+                data = {
+                        keys[2]: i['name'],
+                        keys[3]: i['prompt_prefix'],
+                        keys[4]: i['image_url']
+                        }
+
+                page.append(data)
                 
-                if num < len(search_result) or num%display > 0:
+                if num >= len(search_result)-1 or (num+1)%display == 0:
                     page_count = page_count + 1
                     emb = deepcopy(embed)
-                    
-                    print("\n".join([str(x["name"]) for x in page]))
-                    # emb.add_field(name="Name", value = "\n".join([str(x["name"]) for x in page]))
-                    # emb.add_field(name="Prompt", value = [f"{x[prompt]}\n" if x is not page[display-1] else x[name] for x in page])
-                    # emb.add_field(name="profile pic", value = [f"{x[pfp]}\n" if x is not page[display-1] else x[pfp] for x in page])
-                    emb.set_footer(text=f"Page {page_count}/{int(len(search_result)/display)}")
 
-                    page = []
+                    names = ''
+                    prompts = ''
+                    images = ''
+
+                    for data in page:
+                        piv_str = f"{data['name']}\n" if data is not page[-1] else data['name']
+                        names = names + piv_str
+                        piv_str = f"{data['prompt_prefix']}\n" if data is not page[-1] else data['prompt_prefix']
+                        prompts = prompts + piv_str
+                        if is_link(data['image_url']):
+                            piv_str = f"[Link]({data['image_url']} \'Click to open\')\n" if data is not page[-1] else f"[Link]({data['image_url']} \'Click to open\')"
+                        else:
+                            piv_str = "None\n" if data is not page[-1] else "None"
+                        images = images + piv_str
+                    emb.add_field(name="Name", value = names)
+                    emb.add_field(name="Prompt", value = prompts)
+                    emb.add_field(name="profile pic", value = images)
+                    
+                    emb.set_footer(text=f"Page {page_count}/{(int(len(search_result)/display))+1 if len(search_result)%display != 0 else int(len(search_result)/display)}")
+
+                    page = list()
 
                     pages.append(emb)
 
         pages = [embed] if len(pages) == 0 else pages
-        print(pages)
         menu_formatter = List_source(pages, per_page=1)
         
         result_menu = PageMenu(menu_formatter)
@@ -120,15 +148,12 @@ class CharactersCog(commands.Cog):
 async def setup(client):
     await client.add_cog(CharactersCog(client))
 
-class Character:
-    name: str
-    prompt: str
-    image: str
-
-    def set_values(self, doc):
-        self.name: doc['name']
-        self.prompt: doc['prompt_prefix']
-        self.image: doc['image_url']
+def is_link(string):
+    try:
+        result = urlparse(string)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
 
 class PageMenu(menus.MenuPages):
     
