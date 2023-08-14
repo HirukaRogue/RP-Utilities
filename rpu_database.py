@@ -58,7 +58,7 @@ class Database:
     # This is the standard version of creating characters, when you don't use templates you use default
 
     # This function will search docs using user ID, character name and/or prompt_prefix
-    async def search_default_character(self, *, user_id: int, name: str | None, prompt_prefix: str | None) -> None:
+    async def search_default_character(self, *, user_id: int, name: str | None = None, prompt_prefix: str | None = None) -> None:
         documents = list()
         init = True
         if name:
@@ -85,7 +85,7 @@ class Database:
         return documents if documents[0] is not None else None
 
     # this function will register the newly created character
-    async def register_default_character(self, *, user_id: int, name: str, prompt_prefix: str, image: str | None) -> None:
+    async def register_default_character(self, *, user_id: int, name: str, prompt_prefix: str, image: str | None = None) -> None:
         data = {
             'user_id': user_id,
             'name': name,
@@ -98,8 +98,8 @@ class Database:
             return "ERROR"
     
     # this function will delete a character by name or prompt_prefix
-    async def delete_default_character(self, *, user_id: int, name: str | None, prompt_prefix: str | None) -> None:
-        documents = self.search_default_character(self, user_id, name, prompt_prefix)
+    async def delete_default_character(self, *, user_id: int, name: str | None = None, prompt_prefix: str | None = None) -> None:
+        documents = self.search_default_character(self, user_id=user_id, name=name, prompt_prefix=prompt_prefix)
         
         if len(documents) == 1:
             if name:

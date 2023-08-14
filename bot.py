@@ -48,11 +48,11 @@ class PrefixCog(commands.Cog):
         self.bot = bot
 
     @commands.group(invoke_without_command = True)
-    async def prefix(self, ctx: commands.Context, *, prefix: str) -> None:
+    async def _prefix(self, ctx: commands.Context, *, prefix: str) -> None:
         await self.bot.database.set_prefix(guild_id=ctx.guild.id, prefix=prefix)
         await ctx.send(f"Prefix set to `{prefix}`.")
-    @prefix.command()
-    async def reset(self, ctx: commands.Context) -> None:
+    @_prefix.command()
+    async def _prefix_reset(self, ctx: commands.Context) -> None:
         await self.bot.database.remove_prefix(guild_id=ctx.guild.id)
         await ctx.send(f"The prefix has been reset to `{DEFAULT_PREFIX}`.")
 

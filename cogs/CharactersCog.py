@@ -1,6 +1,10 @@
 import discord
 from discord.ext import commands
 from discord.ext import menus
+from discord import ui
+import asyncio
+from pagination import Paginator
+
 from copy import deepcopy
 from urllib.parse import urlparse
 
@@ -31,19 +35,28 @@ class CharactersCog(commands.Cog):
         search_result = list()
 
         if search is None:
-            search_result = await ctx.bot.database.search_default_character(user_id=user, name=None, prompt_prefix=None)
+            search_result = await ctx.bot.database.search_default_character(user_id=user)
         
         else:
-            search_pivot = await ctx.bot.database.search_default_character(user_id=user, name=search, prompt_prefix=None)
+            search_pivot = await ctx.bot.database.search_default_character(user_id=user, name=search)
             if search_pivot:
                 search_result = search_pivot
-
-            search_pivot = await ctx.bot.database.search_default_character(user_id=user, name=None, prompt_prefix=search)
+            
+            search_pivot = await ctx.bot.database.search_default_character(user_id=user, prompt_prefix=search)
             if  search_pivot and search_result[0] is None:
                 search_result = search_pivot
             elif search_pivot:
-                search_result = search_pivot + search_result
-
+                comparator = list()
+                for piv1 in search_result:
+                    for num_, piv2 in enumerate(search_pivot):
+                        if piv1 == piv2:
+                            comparator.append(num_)
+                
+                for piv1 in search_pivot:
+                    for piv2 in comparator:
+                        if search_pivot[piv2] == piv1:
+                            break
+                    search_result = search_result + piv1
 
         prompt_result = "No results found" if search_result is None else prompt_result
         pages = list()
@@ -54,7 +67,7 @@ class CharactersCog(commands.Cog):
         embed.set_author(name="RP Utilities")
         
 
-        display = 1
+        display = 10
         if search_result[0] is not None:
             page_count = 0
             page = list()
@@ -98,9 +111,8 @@ class CharactersCog(commands.Cog):
                     pages.append(emb)
 
         pages = [embed] if len(pages) == 0 else pages
-        menu_formatter = List_source(pages, per_page=1)
-        
-        result_menu = PageMenu(menu_formatter)
+        result_menu = Paginator(pages)
+
         await result_menu.start(ctx)
 
     @_character_default.command(name="create_default", aliases = ["create"], with_app_command = False)
@@ -126,24 +138,52 @@ class CharactersCog(commands.Cog):
         await ctx.send("Edited")
 
     @_character_default.command(name="delete", aliases = ["del"])
-    async def _character_default_delete(self, ctx, deleting_prompt: str):
+    async def _character_default_delete(self, ctx: discord.Interaction, deleting_prompt: str):
         user = ctx.author.id
 
-        # result = await ctx.bot.database.delete_default_character(user_id=user, name=deleting_prompt)
-        # if result is "ERROR" or result:
-        #     ctx.bot.database.search_default_character(user_id=user, name=deleting_prompt)
+        result = await ctx.bot.database.delete_default_character(user_id=user, prompt_prefix=deleting_prompt)
+        if result == "ERROR":
+            result = ctx.bot.database.delete_default_character(user_id=user, name=deleting_prompt)
+        elif result:
+            sub_result = ctx.bot.database.search_default_character(user_id=user, name=deleting_prompt)
+            comparator = list()
+            for piv1 in result:
+                for num_, piv2 in enumerate(sub_result):
+                    if piv1 == piv2:
+                        comparator.append(num_)
+                
+            for piv1 in result:
+                for piv2 in comparator:
+                    if result[piv2] == piv1:
+                        break
+                result = result + piv1
 
-        # if result is "ERROR":
-        #     await ctx.send("Character not found.")
-        # if result is "SUCESS":
-        #     await ctx.send("Character deleted.")
-        # else:
-        #     embed = discord.Embed(
-        #     title="More than 1 result was found",
-        #     description="Click a link to select one"
-        #     )
-        #     embed.add_field(name="Name", value= [i["name"] for i in result])
-        #     embed.set_author(name="RP Utilities")
+        if result == "ERROR":
+            await ctx.send("Character not found.")
+        elif result == "SUCESS":
+            await ctx.send("Character deleted.")
+        else:
+            embed = discord.Embed(
+            title="There is more than 1 reult for what you want to delete",
+            description="type the full name or prefix to delete the one you want"
+            )
+            for data in result:
+                piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
+                embed.add_field(name="Name", value=piv_str)
+                piv_str = f"{data['prompt_prefix']}\n" if data is not result[-1] else data['prompt_prefix']
+                embed.add_field(name="Name", value=piv_str)
+
+            embed.set_author(name="RP Utilities")
+            await ctx.send(embed)
+
+            response = discord.on_message(ctx)
+            
+            result = ctx.bot.database.search_default_character(user_id=user, name=response) or ctx.bot.database.delete_default_character(user_id=user, prompt_prefix=response)
+
+            if result == "SUCESS":
+                await ctx.send("Character deleted.")
+            elif result:
+                await ctx.send("Invalid Entry!")
 
 async def setup(client):
     await client.add_cog(CharactersCog(client))
@@ -155,30 +195,9 @@ def is_link(string):
     except ValueError:
         return False
 
-class PageMenu(menus.MenuPages):
-    
-    @menus.button("First page")
-    async def on_first(self, payload):
-        await self.show_page(0)
+class Question_delete(ui.Modal, title='Questionnaire Response'):
+    name = ui.TextInput(label='Name')
+    answer = ui.TextInput(label='Answer', style=discord.TextStyle.paragraph)
 
-    @menus.button('Prev page')
-    async def on_prev(self, payload):
-        await self.show_checked_page(self.current_page - 1)
-    
-    @menus.button('Close search')
-    async def on_close(self, payload):
-        self.stop()
-
-    @menus.button('Next page')
-    async def on_prev(self, payload):
-        await self.show_checked_page(self.current_page - 1)
-    
-    @menus.button("Last page")
-    async def on_first(self, payload):
-        max_pages = self._source.get_max_pages()
-        last_page = max(max_pages - 1, 0)
-
-class List_source(menus.ListPageSource):
-    async def format_page(self, menu, entries):
-        embed = entries
-        return embed
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.send_message(f'Thanks for your response, {self.name}!', ephemeral=True)
