@@ -3,10 +3,12 @@ from discord.ext import commands
 from discord.ext import menus
 from discord import ui
 import asyncio
+
 from pagination import Paginator
+from milascenous import is_link
+from milascenous import unify
 
 from copy import deepcopy
-from urllib.parse import urlparse
 
 class CharactersCog(commands.Cog):
     def __init__(self, client):
@@ -19,8 +21,9 @@ class CharactersCog(commands.Cog):
     @commands.hybrid_group(name = "character", fallback="help", invoke_without_command = True, aliases = ["char"])
     async def _character(self, ctx):
         await ctx.send("character related commands, use default if you are a starter.")
+        await ctx.bot.tree.sync()
 
-    @_character.group(name = "default",invoke_without_command = True, aliases = ["def"])
+    @_character.group(name = "default", fallback="help", invoke_without_command = True, aliases = ["def"])
     async def _character_default(self, ctx):
         await ctx.send("""default characters creation
                        This is for when you don't plan to use templates or
@@ -43,20 +46,10 @@ class CharactersCog(commands.Cog):
                 search_result = search_pivot
             
             search_pivot = await ctx.bot.database.search_default_character(user_id=user, prompt_prefix=search)
-            if  search_pivot and search_result[0] is None:
+            if  search_pivot and len(search_result) == 0:
                 search_result = search_pivot
             elif search_pivot:
-                comparator = list()
-                for piv1 in search_result:
-                    for num_, piv2 in enumerate(search_pivot):
-                        if piv1 == piv2:
-                            comparator.append(num_)
-                
-                for piv1 in search_pivot:
-                    for piv2 in comparator:
-                        if search_pivot[piv2] == piv1:
-                            break
-                    search_result = search_result + piv1
+                search_result = unify(search_result,search_pivot)
 
         prompt_result = "No results found" if search_result is None else prompt_result
         pages = list()
@@ -68,7 +61,7 @@ class CharactersCog(commands.Cog):
         
 
         display = 10
-        if search_result[0] is not None:
+        if search_result is not None:
             page_count = 0
             page = list()
 
@@ -143,61 +136,34 @@ class CharactersCog(commands.Cog):
 
         result = await ctx.bot.database.delete_default_character(user_id=user, prompt_prefix=deleting_prompt)
         if result == "ERROR":
-            result = ctx.bot.database.delete_default_character(user_id=user, name=deleting_prompt)
+            result = await ctx.bot.database.delete_default_character(user_id=user, name=deleting_prompt)
         elif result:
-            sub_result = ctx.bot.database.search_default_character(user_id=user, name=deleting_prompt)
-            comparator = list()
-            for piv1 in result:
-                for num_, piv2 in enumerate(sub_result):
-                    if piv1 == piv2:
-                        comparator.append(num_)
-                
-            for piv1 in result:
-                for piv2 in comparator:
-                    if result[piv2] == piv1:
-                        break
-                result = result + piv1
+            sub_result = await ctx.bot.database.search_default_character(user_id=user, name=deleting_prompt)
+            result = unify(result, sub_result)
 
         if result == "ERROR":
             await ctx.send("Character not found.")
         elif result == "SUCESS":
             await ctx.send("Character deleted.")
         else:
+            names = ""
+            prompts = ""
+
             embed = discord.Embed(
             title="There is more than 1 reult for what you want to delete",
             description="type the full name or prefix to delete the one you want"
             )
             for data in result:
                 piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
-                embed.add_field(name="Name", value=piv_str)
+                names = names + piv_str
                 piv_str = f"{data['prompt_prefix']}\n" if data is not result[-1] else data['prompt_prefix']
-                embed.add_field(name="Name", value=piv_str)
+                prompts = prompts + piv_str
+            
+            embed.add_field(name="Name", value=names)
+            embed.add_field(name="Prompt", value=prompts)
 
             embed.set_author(name="RP Utilities")
-            await ctx.send(embed)
-
-            response = discord.on_message(ctx)
+            await ctx.send(embed=embed)
             
-            result = ctx.bot.database.search_default_character(user_id=user, name=response) or ctx.bot.database.delete_default_character(user_id=user, prompt_prefix=response)
-
-            if result == "SUCESS":
-                await ctx.send("Character deleted.")
-            elif result:
-                await ctx.send("Invalid Entry!")
-
 async def setup(client):
     await client.add_cog(CharactersCog(client))
-
-def is_link(string):
-    try:
-        result = urlparse(string)
-        return all([result.scheme, result.netloc])
-    except ValueError:
-        return False
-
-class Question_delete(ui.Modal, title='Questionnaire Response'):
-    name = ui.TextInput(label='Name')
-    answer = ui.TextInput(label='Answer', style=discord.TextStyle.paragraph)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message(f'Thanks for your response, {self.name}!', ephemeral=True)

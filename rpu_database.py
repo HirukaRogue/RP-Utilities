@@ -62,17 +62,17 @@ class Database:
         documents = list()
         init = True
         if name:
-            cursor = self.db.characters.find({'user_id': user_id, 'name': name}, no_cursor_timeout = True)
+            cursor = self.db.characters.find({'user_id': user_id, 'name': {'$regex': name}}, no_cursor_timeout = True)
             while (await cursor.fetch_next):
                 data = cursor.next_object()
                 documents.append(data)
         elif prompt_prefix:
-            cursor = self.db.characters.find({'user_id': user_id, 'prompt_prefix': prompt_prefix}, no_cursor_timeout = True)
+            cursor = self.db.characters.find({'user_id': user_id, 'prompt_prefix': {'$regex': prompt_prefix}}, no_cursor_timeout = True)
             while (await cursor.fetch_next):
                 data = cursor.next_object()
                 documents.append(data)
         elif name and prompt_prefix:
-            cursor = self.db.characters.find({'user_id': user_id, 'name': name,'prompt_prefix': prompt_prefix}, no_cursor_timeout = True)
+            cursor = self.db.characters.find({'user_id': user_id, 'name': {'$regex': name},'prompt_prefix': {'$regex': prompt_prefix}}, no_cursor_timeout = True)
             while (await cursor.fetch_next):
                 data = cursor.next_object()
                 documents.append(data)
@@ -82,7 +82,7 @@ class Database:
                 data = cursor.next_object()
                 documents.append(data)
         
-        return documents if documents[0] is not None else None
+        return documents if len(documents) > 0 else None
 
     # this function will register the newly created character
     async def register_default_character(self, *, user_id: int, name: str, prompt_prefix: str, image: str | None = None) -> None:
@@ -99,24 +99,26 @@ class Database:
     
     # this function will delete a character by name or prompt_prefix
     async def delete_default_character(self, *, user_id: int, name: str | None = None, prompt_prefix: str | None = None) -> None:
-        documents = self.search_default_character(self, user_id=user_id, name=name, prompt_prefix=prompt_prefix)
-        
-        if len(documents) == 1:
+        documents = await self.search_default_character(user_id=user_id, name=name, prompt_prefix=prompt_prefix)
+
+        if documents is None:
+            return "ERROR"
+        elif len(documents) == 1:
             if name:
                 await self.db.characters.delete_one({'user_id': user_id, 'name': name})
             elif prompt_prefix:
                 await self.db.characters.delete_one({'user_id': user_id, 'prompt_prefix': prompt_prefix})
             return "SUCESS"
-        elif documents:
-            return documents
         else:
-            return "ERROR"
+            return documents
 
     # this function will update any stuffs related to the character
     async def update_default_character(self, *, user_id: int, old_name: str | None, old_prompt_prefix: str | None, new_name: str | None, new_prompt_prefix, new_image: str | None) -> None:
-        documents = self.search_default_character(self, user_id, old_name, old_prompt_prefix)
+        documents = await self.search_default_character(user_id, old_name, old_prompt_prefix)
         
-        if len(documents) == 1:
+        if documents is None:
+            return "ERROR"
+        elif len(documents) == 1:
             if new_name:
                 await self.db.characters.update_one({
                     'user_id': user_id,
@@ -138,7 +140,5 @@ class Database:
                     'prompt_prefix': documents['prompt_prefix'],
                     'image_url': new_image
                 })
-        elif documents:
-            return documents
         else:
-            return "ERROR"
+            return documents

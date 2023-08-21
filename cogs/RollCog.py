@@ -113,12 +113,18 @@ class RollCog(commands.Cog):
                 total = self.calculate(indice, store)
                 
             #resp_total will be the output of the roll
-            resp_total = f"```{resp_sub}```\n:game_die: **__Result__** = {total}"
+            resp_total = f"```\n{resp_sub}\n```\n:game_die: **__Total__** = {total}"
+            embed = discord.Embed(
+                title="Roll Result",
+                description=resp_total
+            )
+            
+            await ctx.send(embed=embed)
 
         if not resp_total:
             resp_total = "Error! Invalid arguments"
 
-        await ctx.send(resp_total)
+            await ctx.send(resp_total)
 
 
 

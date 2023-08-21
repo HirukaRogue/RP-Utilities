@@ -1,5 +1,6 @@
 import bot_token
 import discord
+from discord import app_commands
 import asyncio
 from discord.ext import commands
 import os
@@ -17,7 +18,7 @@ class Bot(commands.Bot):
         super().__init__(
             intents=INTENTS,
             command_prefix = prefix_setup,
-            case_insensitive=True
+            case_insensitive=True,
         )
         self.database = Database()
         print("Bot Connected!")
@@ -47,11 +48,17 @@ class PrefixCog(commands.Cog):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
-    @commands.group(invoke_without_command = True)
+    @commands.hybrid_group(name= "prefix", fallback = "help", invoke_without_command = True)
     async def _prefix(self, ctx: commands.Context, *, prefix: str) -> None:
+        await ctx.send("Use this command to set or reset the this bot prefix in your server")
+        await self.bot.tree.sync()
+    
+    @_prefix.command(name= "set")
+    async def _prefix_set(self, ctx: commands.Context, *, prefix: str) -> None:
         await self.bot.database.set_prefix(guild_id=ctx.guild.id, prefix=prefix)
         await ctx.send(f"Prefix set to `{prefix}`.")
-    @_prefix.command()
+
+    @_prefix.command(name= "reset")
     async def _prefix_reset(self, ctx: commands.Context) -> None:
         await self.bot.database.remove_prefix(guild_id=ctx.guild.id)
         await ctx.send(f"The prefix has been reset to `{DEFAULT_PREFIX}`.")
