@@ -262,7 +262,7 @@ class CharactersCog(commands.Cog):
     async def _character_default_image_set(self, ctx, name: str, image: str):
         user = ctx.author.id
 
-        result = await ctx.bot.database.update_default_character(user_id=user, name=name, new_image=image)
+        result = await ctx.bot.database.update_default_character(user_id=user, old_name=name, new_image=image)
 
         if result is None:
             await ctx.send(f"you have no characters with name {name}")
@@ -298,7 +298,7 @@ class CharactersCog(commands.Cog):
         user = ctx.author.id
         url = image1.url if image1 else image2
 
-        result = await ctx.bot.database.update_default_character(user_id=user, name=name, new_image=url)
+        result = await ctx.bot.database.update_default_character(user_id=user, old_name=name, new_image=url)
 
         if result is None:
             await ctx.send(f"you have no characters with name {name}")
@@ -333,7 +333,7 @@ class CharactersCog(commands.Cog):
     async def _character_default_image_by_prompt(self, ctx, prompt: str):
         user = ctx.author.id
 
-        result = await ctx.bot.database.quick_search_default_character(user_id=user, prompt_prefix=prompt)
+        result = await ctx.bot.database.quick_search_default_character(user_id=user, old_prompt_prefix=prompt)
 
         if result is None:
             await ctx.send(f"you have no characters with prompt {prompt}")
@@ -345,7 +345,7 @@ class CharactersCog(commands.Cog):
     async def _character_default_image_by_prompt_set(self, ctx, prompt, image):
         user = ctx.author.id
 
-        result = await ctx.bot.database.quick_search_default_character(user_id=user, prompt_prefix=prompt, new_image=image)
+        result = await ctx.bot.database.quick_search_default_character(user_id=user, old_prompt_prefix=prompt, new_image=image)
 
         if result is None:
             await ctx.send(f"you have no characters with prompt {prompt}")
