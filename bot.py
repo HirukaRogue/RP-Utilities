@@ -32,6 +32,14 @@ class Bot(commands.Bot):
         for filename in os.listdir("./cogs"):
             if filename.endswith(".py"):
                 await self.load_extension(f"cogs.{filename[:-3]}")
+        guild = discord.Object(1135999359985647706)
+        # tree = self.tree
+        # tree.clear_commands(guild=guild)
+        # await tree.sync(guild=guild)
+        # tree.clear_commands(guild=guild)
+        # await tree.sync()
+        await self.tree.sync()
+        # print(self.tree.get_command('character').get_command('default').get_command('image_set').binding)
 
     async def close(self) -> None:
         await super().close()
@@ -51,7 +59,6 @@ class PrefixCog(commands.Cog):
     @commands.hybrid_group(name= "prefix", fallback = "help", invoke_without_command = True)
     async def _prefix(self, ctx: commands.Context, *, prefix: str) -> None:
         await ctx.send("Use this command to set or reset the this bot prefix in your server")
-        await self.bot.tree.sync()
     
     @_prefix.command(name= "set")
     async def _prefix_set(self, ctx: commands.Context, *, prefix: str) -> None:
