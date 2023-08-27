@@ -137,7 +137,7 @@ class CharactersCog(commands.Cog):
         elif not prompt.endswith(":"):
             response = "Your prompt shall ends with :"
 
-        await ctx.send(response)
+        await ctx.response.send_message(response)
 
     @_character_default.command(name="edit_name")
     async def _character_default_edit_name(self, ctx, old_name: str, new_name: str):
@@ -265,9 +265,9 @@ class CharactersCog(commands.Cog):
         result = await ctx.bot.database.update_default_character(user_id=user, old_name=name, new_image=image)
 
         if result is None:
-            await ctx.send(f"you have no characters with name {name}")
+            await ctx.response.send_message(f"you have no characters with name {name}")
         elif result == "SUCESS":
-            await ctx.send(f"image set to {image}")
+            await ctx.response.send_message(f"image set to {image}")
         else:
             embed = discord.Embed(
                 title="There is more than 1 result for what you want to set image",
@@ -301,9 +301,9 @@ class CharactersCog(commands.Cog):
         result = await ctx.bot.database.update_default_character(user_id=user, old_name=name, new_image=url)
 
         if result is None:
-            await ctx.send(f"you have no characters with name {name}")
+            await ctx.response.send_message(f"you have no characters with name {name}")
         elif result == "SUCESS":
-            await ctx.send(f"image set to {url}")
+            await ctx.response.send_message(f"image set to {url}")
         else:
             embed = discord.Embed(
                 title="There is more than 1 result for what you want to set image",
@@ -327,7 +327,7 @@ class CharactersCog(commands.Cog):
             embed.add_field(name="Name", value=names)
 
             embed.set_author(name="RP Utilities")
-            await ctx.send(embed=embed)
+            await ctx.response.send_message(embed=embed)
     
     @_character_default.command(name="image_by_prompt", aliases=["img_by_prompt", "pfp_by_prompt", "profile_by_prompt"])
     async def _character_default_image_by_prompt(self, ctx, prompt: str):
@@ -339,7 +339,7 @@ class CharactersCog(commands.Cog):
             await ctx.send(f"you have no characters with prompt {prompt}")
         else:
             result = result[0]
-            await ctx.send(result['image_url'])
+            await ctx.response.send_message(result['image_url'])
 
     @_character_default.command(name="set image by prompt", aliases=["img_set_by_prompt", "pfp_set_by_prompt", "profile_set_by_prompt"], with_app_command = False)
     async def _character_default_image_by_prompt_set(self, ctx, prompt, image):
@@ -360,9 +360,9 @@ class CharactersCog(commands.Cog):
         result = await ctx.bot.database.quick_search_default_character(user_id=user, prompt_prefix=prompt, new_image=url)
 
         if result is None:
-            await ctx.send(f"you have no characters with prompt {prompt}")
+            await ctx.response.send_message(f"you have no characters with prompt {prompt}")
         else:
-            await ctx.send(f"image set to {url}")
+            await ctx.response.send_message(f"image set to {url}")
 
             
 async def setup(client):
