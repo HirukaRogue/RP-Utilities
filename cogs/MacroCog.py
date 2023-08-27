@@ -1,7 +1,8 @@
 import discord
 from discord.ext import commands
+import re
 
-class PingCog(commands.Cog):
+class MacroCog(commands.Cog):
     def __init__(self, client):
         self.client = client
 
@@ -9,11 +10,37 @@ class PingCog(commands.Cog):
     async def on_ready(self):
         print("Ping.py is ready")
 
-    @commands.command()
-    async def ping(self, ctx):
-        bot_latency = round(self.client.latency)
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        checker = message.content
+        if not checker.startswith("#"):
+            return
+        
+    @commands.hybrid_group(name="macro", fallback="help")
+    async def _macro(self, ctx):
+        await ctx.send("With macros you can make shortcut to execute commands from the bot without needing to execute it manulally")
+    
+    @_macro.command(name="create")
+    async def _macro_create(self, ctx, prefix, args):
+        if not prefix.startswith("#"):
+            ctx.send("Your macro prefix shall start with #")
+        else:
+            pattern = r"\{(.*?)\}"
+            sub_commandos = re.findall(pattern, args)
+            print(sub_commandos)
+            pattern = r"(!echo|!roll|!math)\s+([\w\s+-]+)"
+            cmd = re.findall(pattern, args)
+            print(cmd)
+            await ctx.send("Testado")
 
-        await ctx.send(f"Pong: {bot_latency} ms")
+
+    @_macro.command(name="edit")
+    async def _macro_create(self, ctx, prefix, args):
+        ...
+
+    @_macro.command(name="delete")
+    async def _macro_create(self, ctx, prefix):
+        ...
 
 async def setup(client):
-    await client.add_cog(PingCog(client))
+    await client.add_cog(MacroCog(client))
