@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+import re
 
 import random
 
@@ -25,7 +26,8 @@ class SelectionCog(commands.Cog):
     
     @app_commands.command(name="select")
     async def select_slash(self, ctx: discord.Interaction, args: str):
-        matches = args.split(" ")
+        pattern = r'\((.*?)\)'
+        matches = re.findall(pattern, args)
         number = len(matches) - 1
         selected = matches[random.randint(0, number)]
         embed = discord.Embed(

@@ -38,7 +38,7 @@ class CharactersCog(commands.Cog):
 
         if search is None:
             search_result = await ctx.bot.database.search_default_character(user_id=user)
-        
+
         else:
             search_pivot = await ctx.bot.database.search_default_character(user_id=user, name=search)
             if search_pivot:
@@ -67,9 +67,9 @@ class CharactersCog(commands.Cog):
             for num,i in enumerate(search_result):
                 keys = list(i.keys())
                 data = {
-                        keys[2]: i['name'],
-                        keys[3]: i['prompt_prefix'],
-                        keys[4]: i['image_url']
+                        keys[0]: i['name'],
+                        keys[1]: i['prompt_prefix'],
+                        keys[2]: i['image_url']
                         }
 
                 page.append(data)
@@ -115,7 +115,7 @@ class CharactersCog(commands.Cog):
             response = "Error, the character with this prompt already exist." if await ctx.bot.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=image) else "Character created."
         elif len(prompt) > 17:
             response = "Your prompt cannot have more than 16 characters"
-        elif prompt.startswith("#"):
+        elif prompt.startswith("##"):
             response = "You cannot start your prompt with #, since # is reserved for macros"
         elif not prompt.endswith(":"):
             response = "Your prompt shall ends with :"
@@ -124,20 +124,20 @@ class CharactersCog(commands.Cog):
 
     # Slash version
     @_character_default.app_command.command(name = "create",)
-    async def _character_default_create_slash(self, ctx: discord.Interaction, name: str, prompt: str, image_1: discord.Attachment | None, image_2: str | None):
-        user = ctx.user.id
+    async def _character_default_create_slash(self, interaction: discord.Interaction, name: str, prompt: str, image_1: discord.Attachment | None, image_2: str | None):
+        user = interaction.user.id
         url = image_1.url if image_1 else image_2
 
         if len(prompt) <= 17 and not prompt.startswith("#") and prompt.endswith(":"):
-            response = "Error, the character with this prompt already exist." if await ctx.bot.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=url) else "Character created."
+            response = "Error, the character with this prompt already exist." if await self.client.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=url) else "Character created."
         elif len(prompt) > 17:
             response = "Your prompt cannot have more than 16 characters"
-        elif prompt.startswith("#"):
+        elif prompt.startswith("##"):
             response = "You cannot start your prompt with #, since # is reserved for macros"
         elif not prompt.endswith(":"):
             response = "Your prompt shall ends with :"
 
-        await ctx.response.send_message(response)
+        await interaction.response.send_message(response)
 
     @_character_default.command(name="edit_name")
     async def _character_default_edit_name(self, ctx, old_name: str, new_name: str):
@@ -194,7 +194,7 @@ class CharactersCog(commands.Cog):
         result = await ctx.bot.database.delete_default_character(user_id=user, prompt_prefix=deleting_prompt)
         if result == "ERROR":
             result = await ctx.bot.database.delete_default_character(user_id=user, name=deleting_prompt)
-        elif result:
+        elif result and result != "SUCESS":
             sub_result = await ctx.bot.database.search_default_character(user_id=user, name=deleting_prompt)
             result = unify(result, sub_result)
 
@@ -294,16 +294,16 @@ class CharactersCog(commands.Cog):
             await ctx.send(embed=embed)
 
     @_character_default.app_command.command(name = "image_set",)
-    async def _character_default_image_set_slash(self, ctx: discord.Interaction, name: str, image1: discord.Attachment | None, image2: str | None):
-        user = ctx.author.id
+    async def _character_default_image_set_slash(self, interaction: discord.Interaction, name: str, image1: discord.Attachment | None, image2: str | None):
+        user = interaction.user.id
         url = image1.url if image1 else image2
 
-        result = await ctx.bot.database.update_default_character(user_id=user, old_name=name, new_image=url)
+        result = await self.client.database.update_default_character(user_id=user, old_name=name, new_image=url)
 
         if result is None:
-            await ctx.response.send_message(f"you have no characters with name {name}")
+            await interaction.response.send_message(f"you have no characters with name {name}")
         elif result == "SUCESS":
-            await ctx.response.send_message(f"image set to {url}")
+            await interaction.response.send_message(f"image set to {url}")
         else:
             embed = discord.Embed(
                 title="There is more than 1 result for what you want to set image",
@@ -327,13 +327,13 @@ class CharactersCog(commands.Cog):
             embed.add_field(name="Name", value=names)
 
             embed.set_author(name="RP Utilities")
-            await ctx.response.send_message(embed=embed)
+            await interaction.response.send_message(embed=embed)
     
     @_character_default.command(name="image_by_prompt", aliases=["img_by_prompt", "pfp_by_prompt", "profile_by_prompt"])
     async def _character_default_image_by_prompt(self, ctx, prompt: str):
         user = ctx.author.id
 
-        result = await ctx.bot.database.quick_search_default_character(user_id=user, old_prompt_prefix=prompt)
+        result = await self.client.database.quick_search_default_character(user_id=user, old_prompt_prefix=prompt)
 
         if result is None:
             await ctx.send(f"you have no characters with prompt {prompt}")
@@ -345,7 +345,7 @@ class CharactersCog(commands.Cog):
     async def _character_default_image_by_prompt_set(self, ctx, prompt, image):
         user = ctx.author.id
 
-        result = await ctx.bot.database.quick_search_default_character(user_id=user, old_prompt_prefix=prompt, new_image=image)
+        result = await self.client.database.quick_search_default_character(user_id=user, old_prompt_prefix=prompt, new_image=image)
 
         if result is None:
             await ctx.send(f"you have no characters with prompt {prompt}")
@@ -353,16 +353,16 @@ class CharactersCog(commands.Cog):
             await ctx.send(f"image set to {image}")
 
     @_character_default.app_command.command(name = "image_set_by_prompt",)
-    async def _character_default_image_set_by_prompt_slash(self, ctx: discord.Interaction, prompt: str, image1: discord.Attachment | None, image2: str | None):
-        user = ctx.author.id
+    async def _character_default_image_set_by_prompt_slash(self, interaction: discord.Interaction, prompt: str, image1: discord.Attachment | None, image2: str | None):
+        user = interaction.user.id
         url = image1.url if image1 else image2
 
-        result = await ctx.bot.database.quick_search_default_character(user_id=user, prompt_prefix=prompt, new_image=url)
+        result = await self.client.database.quick_search_default_character(user_id=user, prompt_prefix=prompt, new_image=url)
 
         if result is None:
-            await ctx.response.send_message(f"you have no characters with prompt {prompt}")
+            await interaction.response.send_message(f"you have no characters with prompt {prompt}")
         else:
-            await ctx.response.send_message(f"image set to {url}")
+            await interaction.response.send_message(f"image set to {url}")
 
             
 async def setup(client):

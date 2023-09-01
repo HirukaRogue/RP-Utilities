@@ -10,7 +10,7 @@ class Database:
     async def connect(self, connection_uri: str, /) -> None:
         self.dev_client = motor.motor_asyncio.AsyncIOMotorClient(connection_uri)
         if self.dev_client is not None:
-            self.db = self.dev_client.rpu_database
+            self.db = self.dev_client['rpu_database_alpha']
             print("Database connected!")
         else:
             self.db = None
@@ -25,27 +25,27 @@ class Database:
 
     # this function will create a new prefix for a guild
     async def set_prefix(self, *, guild_id: int, prefix: str) -> None:
-        if await self.db.prefixes.find_one({'guild_id':guild_id}) is None:
-            await self.db.prefixes.insert_one({
+        if await self.db['prefixes'].find_one({'guild_id':guild_id}) is None:
+            await self.db['prefixes'].insert_one({
                 'guild_id': guild_id,
                 'prefix': prefix
             })
         else:
-            await self.db.prefixes.update_one({
+            await self.db['prefixes'].update_one({
                 'guild_id': guild_id,
                 'prefix': prefix
             })
 
     # this function will delete the prefix of a guild, reseting it to the standard one
     async def remove_prefix(self, *, guild_id: int) -> None:
-        document = await self.db.prefixes.find_one({'guild_id': guild_id})
+        document = await self.db['prefixes'].find_one({'guild_id': guild_id})
 
         if document is not None:
-            await self.db.prefixes.delete_one({'guild_id': guild_id})
+            await self.db['prefixes'].delete_one({'guild_id': guild_id})
 
     # this function will grab the prefix of the bot in a guild, if there is none the prefix will be the default one
     async def get_prefix(self, *, guild_id: int) -> str | None:
-        document = await self.db.prefixes.find_one({'guild_id': guild_id})
+        document = await self.db['prefixes'].find_one({'guild_id': guild_id})
         
         if document is not None:
             return document["prefix"]
@@ -57,21 +57,27 @@ class Database:
 
     # This is a buffer initiator and associator
     async def buffer(self, user_id):
-        buffer = await self.db.buffer.find_one({'user_id':user_id})
+        buffer = await self.db['buffer'].find_one({'user_id': user_id})
         if buffer is None:
-            await self.db.buffer.insert_one({
+            await self.db['buffer'].insert_one({
                 'user_id': user_id,
                 'buffer': list()
             })
-            buffer = await self.db.buffer.find_one({'user_id':user_id})
+            buffer = await self.db['buffer'].find_one({'user_id': user_id})
         
         buffer = buffer['buffer']
 
-        return buffer
+        char_list = await self.db['characters'].find_one({'user_id': user_id})
+        char_buffer = list()
+        if len(buffer) > 0:
+            for i in buffer:
+                char_buffer.append(char_list[i])
+
+        return char_buffer
     
     # this is a buff register
     async def buffer_reg(self, user_id, registry):
-        buffer = await self.db.buffer.find_one({'user_id':user_id})
+        buffer = await self.db['buffer'].find_one({'user_id':user_id})
         if buffer is None:
             buffer = await self.db.buffer.insert_one({
                 'user_id': user_id,
@@ -80,11 +86,15 @@ class Database:
 
         buffer = buffer["buffer"]
 
-        buffer.append(registry)
-        if len(buffer) > 10:
-            buffer['buffer'].pop(0)
+        char_list = self.db['characters'].find_one({'user_id': user_id})
+        for num, i in enumerate(char_list):
+            if i is registry:
+                buffer.append(num)
+                if len(buffer) > 10:
+                    buffer.pop(0)
+                break
         
-        await self.db.buffer.update_one({
+        await self.db['buffer'].update_one({
             'user_id': user_id
         }, {'$set': {'buffer': buffer}})
 
@@ -93,13 +103,13 @@ class Database:
 
     #anonimity
     async def anonimity_check(self, user_id):
-        checker = await self.db.anonimity.find_one({'user_id':user_id})
+        checker = await self.db['anonimity'].find_one({'user_id':user_id})
         if checker is None:
-            await self.db.anonimity.insert_one({
+            await self.db['anonimity'].insert_one({
                 'user_id': user_id,
                 'anonimity': False
             })
-            checker = await self.db.anonimity.find_one({'user_id':user_id})
+            checker = await self.db['anonimity'].find_one({'user_id':user_id})
         
         checker = checker['anonimity']
 
@@ -107,12 +117,12 @@ class Database:
     
     #switch true or false anonymous mode
     async def switch_anonimous_mode(self, user_id):
-        checker = await self.db.anonimity.find_one({'user_id':user_id})
+        checker = await self.db['anonimity'].find_one({'user_id':user_id})
         
         switch = bool
 
         if checker is None:
-            checker = await self.db.anonimity.insert_one({
+            checker = await self.db['anonimity'].insert_one({
                 'user_id': user_id,
                 'anonimity': True
             })
@@ -121,7 +131,7 @@ class Database:
         else:
             switch = True
 
-        await self.db.anonimity.update_one({
+        await self.db['anonimity'].update_one({
             'user_id': user_id
         }, {'$set': {'anonimity': switch}})
 
@@ -132,112 +142,118 @@ class Database:
 
     # This function will search docs using user ID, character name and/or prompt_prefix
     async def search_default_character(self, *, user_id: int, name: str | None = None, prompt_prefix: str | None = None) -> None:
+        database = await self.db['characters'].find_one({'user_id': user_id})
+        char_list = database['characters']
         documents = list()
-        init = True
-        if name and prompt_prefix:
-            cursor = self.db.characters.find({'user_id': user_id, 'name': {'$regex': name},'prompt_prefix': {'$regex': prompt_prefix}}, no_cursor_timeout = True)
-            while (await cursor.fetch_next):
-                data = cursor.next_object()
-                documents.append(data)
-        elif prompt_prefix:
-            cursor = self.db.characters.find({'user_id': user_id, 'prompt_prefix': {'$regex': prompt_prefix}}, no_cursor_timeout = True)
-            while (await cursor.fetch_next):
-                data = cursor.next_object()
-                documents.append(data)
-        elif name:
-            cursor = self.db.characters.find({'user_id': user_id, 'name': {'$regex': name}}, no_cursor_timeout = True)
-            while (await cursor.fetch_next):
-                data = cursor.next_object()
-                documents.append(data)
-        else:
-            cursor = self.db.characters.find({'user_id': user_id}, no_cursor_timeout = True)
-            while (await cursor.fetch_next):
-                data = cursor.next_object()
-                documents.append(data)
+        if char_list:
+            if name and prompt_prefix:
+                print("name and prompt")
+                for i in char_list:
+                    if name in i['name'] and prompt_prefix in i['prompt_prefix']:
+                        documents.append(i)
+            elif prompt_prefix:
+                print("prompt only")
+                for i in char_list:
+                    if prompt_prefix in i['prompt_prefix']:
+                        documents.append(i)
+            elif name:
+                for i in char_list:
+                    if name in i['name']:
+                        documents.append(i)
+            else:
+                for i in char_list:
+                    documents.append(i)
         
-        return documents if len(documents) > 0 else None
-    
-    # Quicker version of search
-    async def quick_search_default_character(self, *, user_id: int, name: str | None = None, prompt_prefix: str | None = None) -> None:
-        documents = list()
-        init = True
-        if name and prompt_prefix:
-            cursor = self.db.characters.find({'user_id': user_id, 'name': name,'prompt_prefix': prompt_prefix}, no_cursor_timeout = True)
-            while (await cursor.fetch_next):
-                data = cursor.next_object()
-                documents.append(data)
-        elif prompt_prefix:
-            cursor = self.db.characters.find({'user_id': user_id, 'prompt_prefix': prompt_prefix}, no_cursor_timeout = True)
-            while (await cursor.fetch_next):
-                data = cursor.next_object()
-                documents.append(data)
-        elif name:
-            cursor = self.db.characters.find({'user_id': user_id, 'name': name}, no_cursor_timeout = True)
-            while (await cursor.fetch_next):
-                data = cursor.next_object()
-                documents.append(data)
-        else:
-            cursor = self.db.characters.find({'user_id': user_id}, no_cursor_timeout = True)
-            while (await cursor.fetch_next):
-                data = cursor.next_object()
-                documents.append(data)
-
         return documents if len(documents) > 0 else None
 
     # this function will register the newly created character
     async def register_default_character(self, *, user_id: int, name: str, prompt_prefix: str, image: str | None = None) -> None:
         data = {
-            'user_id': user_id,
             'name': name,
             'prompt_prefix': prompt_prefix,
             'image_url': image
         }
-        if await self.db.characters.find_one({'prompt_prefix': prompt_prefix}) is None:
-            await self.db.characters.insert_one(data)
-        else:
-            return "ERROR"
+
+        database = await self.db['characters'].find_one({'user_id': user_id})
+        if not database:
+            await self.db['characters'].insert_one({'user_id': user_id,
+                                                    'characters': list()
+                                                    })
+            database = await self.db['characters'].find_one({'user_id': user_id})
+
+        char_list = database['characters']
+        if len(char_list) > 0:
+            for i in char_list:
+                if i['prompt_prefix'] == data['prompt_prefix']:
+                    return "ERROR"            
+
+        char_list.append(data)
+
+        await self.db['characters'].update_one({'user_id': user_id}, {'$set': {'characters': char_list}})
     
     # this function will delete a character by name or prompt_prefix
     async def delete_default_character(self, *, user_id: int, name: str | None = None, prompt_prefix: str | None = None) -> None:
-        documents = await self.search_default_character(user_id=user_id, name=name, prompt_prefix=prompt_prefix)
+        database = await self.db['characters'].find_one({'user_id': user_id})
+        char_list = database['characters']
 
-        if documents is None:
+        instances = list()
+
+        for num, i in enumerate(char_list):
+            if name in i['name'] or prompt_prefix in i['prompt_prefix']:
+                instances.append(num)
+
+        if len(instances) == 0:
             return "ERROR"
-        elif len(documents) == 1:
-            if name:
-                await self.db.characters.delete_one({'user_id': user_id, 'name': name})
-            elif prompt_prefix:
-                await self.db.characters.delete_one({'user_id': user_id, 'prompt_prefix': prompt_prefix})
+        elif len(instances) == 1:
+            char_list.pop(instances[0])
+            await self.db['characters'].update_one({'user_id': user_id}, {'$set': {'characters': char_list}})
             return "SUCESS"
         else:
+            documents = list()
+            for i in instances:
+                documents.append(char_list[i])
             return documents
 
     # this function will update any stuffs related to the character
     async def update_default_character(self, *, user_id: int, old_name: str | None = None, old_prompt_prefix: str | None = None, new_name: str | None = None, new_prompt_prefix: str | None = None, new_image: str | None = None) -> None:
-        documents = await self.quick_search_default_character(user_id=user_id, name=old_name, prompt_prefix=old_prompt_prefix)
-        
-        if documents is None:
+        database = self.db['characters'].find_one({'user_id': user_id})
+        char_list = database['characters']
+
+        instances = list()
+
+        for num, i in enumerate(char_list):
+            if old_name in i['name'] or old_prompt_prefix in i['prompt_prefix']:
+                instances.append(num)
+
+        if len(instances) == 0:
             return "ERROR"
-        elif len(documents) == 1:
-            documents = documents[0]
+        elif len(instances) == 1:
+            document = char_list[instances[0]]
             if new_name:
-                await self.db.characters.update_one({
-                    'user_id': user_id,
-                    'prompt_prefix': documents['prompt_prefix'],
-                    'image_url': documents['image_url']
-                },{"$set": {'name': new_name}})
+                document = {
+                    'name': new_name,
+                    'prompt_prefix': document['prompt_prefix'],
+                    'image_url': document['image_url']
+                }
+                char_list[instances[0]] = document
             elif new_prompt_prefix:
-                await self.db.characters.update_one({
-                    'user_id': user_id,
-                    'name': documents['name'],
-                    'image_url': documents['image_url']
-                },{'$set': {'prompt_prefix': new_prompt_prefix}})
+                document = {
+                    'name': document['name'],
+                    'prompt_prefix': new_prompt_prefix,
+                    'image_url': document['image_url']
+                }
+                char_list[instances[0]] = document
             elif new_image:
-                await self.db.characters.update_one({
-                    'user_id': user_id,
-                    'name': documents['name'],
-                    'prompt_prefix': documents['prompt_prefix']
-                },{'$set': {'image_url': new_image}})
+                document = {
+                    'name': document['name'],
+                    'prompt_prefix': document['prompt_prefix'],
+                    'image_url': new_image
+                }
+                char_list[instances[0]] = document
+            await self.db['characters'].update_one({'user_id': user_id}, {'$set': {'characters': char_list}})
             return "SUCESS"
         else:
+            documents = list()
+            for i in instances:
+                documents.append(char_list[i])
             return documents
