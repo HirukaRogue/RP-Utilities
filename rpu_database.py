@@ -143,9 +143,9 @@ class Database:
     # This function will search docs using user ID, character name and/or prompt_prefix
     async def search_default_character(self, *, user_id: int, name: str | None = None, prompt_prefix: str | None = None) -> None:
         database = await self.db['characters'].find_one({'user_id': user_id})
-        char_list = database['characters']
         documents = list()
-        if char_list:
+        if database:
+            char_list = database['characters']
             if name and prompt_prefix:
                 print("name and prompt")
                 for i in char_list:
@@ -194,66 +194,74 @@ class Database:
     # this function will delete a character by name or prompt_prefix
     async def delete_default_character(self, *, user_id: int, name: str | None = None, prompt_prefix: str | None = None) -> None:
         database = await self.db['characters'].find_one({'user_id': user_id})
-        char_list = database['characters']
+        
+        if database:
+            char_list = database['characters']
 
-        instances = list()
+            instances = list()
 
-        for num, i in enumerate(char_list):
-            if name in i['name'] or prompt_prefix in i['prompt_prefix']:
-                instances.append(num)
+            for num, i in enumerate(char_list):
+                if name in i['name'] or prompt_prefix in i['prompt_prefix']:
+                    instances.append(num)
 
-        if len(instances) == 0:
-            return "ERROR"
-        elif len(instances) == 1:
-            char_list.pop(instances[0])
-            await self.db['characters'].update_one({'user_id': user_id}, {'$set': {'characters': char_list}})
-            return "SUCESS"
+            if len(instances) == 0:
+                return "ERROR"
+            elif len(instances) == 1:
+                char_list.pop(instances[0])
+                await self.db['characters'].update_one({'user_id': user_id}, {'$set': {'characters': char_list}})
+                return "SUCESS"
+            else:
+                documents = list()
+                for i in instances:
+                    documents.append(char_list[i])
+                return documents
         else:
-            documents = list()
-            for i in instances:
-                documents.append(char_list[i])
-            return documents
+            return "ERROR"
 
     # this function will update any stuffs related to the character
     async def update_default_character(self, *, user_id: int, old_name: str | None = None, old_prompt_prefix: str | None = None, new_name: str | None = None, new_prompt_prefix: str | None = None, new_image: str | None = None) -> None:
         database = self.db['characters'].find_one({'user_id': user_id})
-        char_list = database['characters']
+        
+        if database:
+            char_list = database['characters']
 
-        instances = list()
+            instances = list()
 
-        for num, i in enumerate(char_list):
-            if old_name in i['name'] or old_prompt_prefix in i['prompt_prefix']:
-                instances.append(num)
+            for num, i in enumerate(char_list):
+                if old_name in i['name'] or old_prompt_prefix in i['prompt_prefix']:
+                    instances.append(num)
 
-        if len(instances) == 0:
-            return "ERROR"
-        elif len(instances) == 1:
-            document = char_list[instances[0]]
-            if new_name:
-                document = {
-                    'name': new_name,
-                    'prompt_prefix': document['prompt_prefix'],
-                    'image_url': document['image_url']
-                }
-                char_list[instances[0]] = document
-            elif new_prompt_prefix:
-                document = {
-                    'name': document['name'],
-                    'prompt_prefix': new_prompt_prefix,
-                    'image_url': document['image_url']
-                }
-                char_list[instances[0]] = document
-            elif new_image:
-                document = {
-                    'name': document['name'],
-                    'prompt_prefix': document['prompt_prefix'],
-                    'image_url': new_image
-                }
-                char_list[instances[0]] = document
-            await self.db['characters'].update_one({'user_id': user_id}, {'$set': {'characters': char_list}})
-            return "SUCESS"
+            if len(instances) == 0:
+                return "ERROR"
+            elif len(instances) == 1:
+                document = char_list[instances[0]]
+                if new_name:
+                    document = {
+                        'name': new_name,
+                        'prompt_prefix': document['prompt_prefix'],
+                        'image_url': document['image_url']
+                    }
+                    char_list[instances[0]] = document
+                elif new_prompt_prefix:
+                    document = {
+                        'name': document['name'],
+                        'prompt_prefix': new_prompt_prefix,
+                        'image_url': document['image_url']
+                    }
+                    char_list[instances[0]] = document
+                elif new_image:
+                    document = {
+                        'name': document['name'],
+                        'prompt_prefix': document['prompt_prefix'],
+                        'image_url': new_image
+                    }
+                    char_list[instances[0]] = document
+                await self.db['characters'].update_one({'user_id': user_id}, {'$set': {'characters': char_list}})
+                return "SUCESS"
+            else:
+                documents = list()
+                for i in instances:
+                    documents.append(char_list[i])
+                return documents
         else:
-            documents = list()
-            for i in instances:
-                documents.append(char_list[i])
-            return documents
+            return "ERROR"
