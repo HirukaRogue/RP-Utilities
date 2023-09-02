@@ -23,14 +23,14 @@ class MathCog(commands.Cog):
         await ctx.send(embed=embed)
     
     @app_commands.command(name="math")
-    async def math_slash(self, ctx: discord.Interaction, args: str):
+    async def math_slash(self, interaction: discord.Interaction, args: str):
         string_result = args
         result = sympify(args)
         string_result = f"Problem: {args}\nSolution:{result}"
         embed = discord.Embed(
             description=string_result
         )
-        await ctx.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
 async def setup(client):
     await client.add_cog(MathCog(client))

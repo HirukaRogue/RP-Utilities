@@ -128,7 +128,7 @@ class RollCog(commands.Cog):
             await ctx.send(resp_total)
 
     @app_commands.command(name="roll")
-    async def roll(self, ctx: discord.Interaction, args: str):
+    async def roll(self, interaction: discord.Interaction, args: str):
         #define boolean see if the code will work or not
         not_failure = True
         #start to make the roll
@@ -234,7 +234,7 @@ class RollCog(commands.Cog):
                 description=resp_total
             )
             
-            await ctx.response.send_message(embed=embed)
+            await interaction.response.send_message(embed=embed)
 
     def calculate(self, indice, store):
         sub_total = 0
