@@ -67,7 +67,8 @@ class Database:
         
         buffer = buffer['buffer']
 
-        char_list = await self.db['characters'].find_one({'user_id': user_id})
+        database = await self.db['characters'].find_one({'user_id': user_id})
+        char_list = database['characters']
         char_buffer = list()
         if len(buffer) > 0:
             for i in buffer:
@@ -77,7 +78,7 @@ class Database:
     
     # this is a buff register
     async def buffer_reg(self, user_id, registry):
-        buffer = await self.db['buffer'].find_one({'user_id':user_id})
+        buffer = await self.db['buffer'].find_one({'user_id': user_id})
         if buffer is None:
             buffer = await self.db.buffer.insert_one({
                 'user_id': user_id,
@@ -85,15 +86,15 @@ class Database:
             })
 
         buffer = buffer["buffer"]
-
-        char_list = self.db['characters'].find_one({'user_id': user_id})
+        database = await self.db['characters'].find_one({'user_id': user_id})
+        char_list = database['characters']
         for num, i in enumerate(char_list):
-            if i is registry:
+            if i == registry:
                 buffer.append(num)
                 if len(buffer) > 10:
                     buffer.pop(0)
                 break
-        
+
         await self.db['buffer'].update_one({
             'user_id': user_id
         }, {'$set': {'buffer': buffer}})
@@ -137,6 +138,41 @@ class Database:
 
         return switch
 
+    ### WEBHOOK LOG ###
+    # to keep track which webhook belongs to the log serves well
+
+    #this function serves as a webhook tracker each time a new message is made
+    async def webhook_log_reg(self, *, user_id: int, message_id: int):
+        database = await self.db['webhook_log'].find_one({'user_id': user_id})
+        if database is None:
+            await self.db['webhook_log'].insert_one({
+                'user_id': user_id,
+                'webhook_log': list()
+            })
+            database = await self.db['webhook_log'].find_one({'user_id': user_id})
+        
+        message_list = database['webhook_log']
+
+        message_list.append(message_id)
+        if len(message_list) > 256:
+            message_list.pop(0)
+        
+        await self.db['webhook_log'].update_one({
+            'user_id': user_id
+        }, {'$set': {'webhook_log': message_list}})
+
+    async def webhook_log_confirm(self, *, user_id: int, message_id: int):
+        database = await self.db['webhook_log'].find_one({'user_id': user_id})
+        if database:
+            message_list = database['webhook_log']
+        else:
+            return False
+
+        if message_id in message_list:
+            return True
+        else:
+            return False
+
     ### DEFAULT CHARACTERS ###
     # This is the standard version of creating characters, when you don't use templates you use default
 
@@ -147,12 +183,10 @@ class Database:
         if database:
             char_list = database['characters']
             if name and prompt_prefix:
-                print("name and prompt")
                 for i in char_list:
                     if name in i['name'] and prompt_prefix in i['prompt_prefix']:
                         documents.append(i)
             elif prompt_prefix:
-                print("prompt only")
                 for i in char_list:
                     if prompt_prefix in i['prompt_prefix']:
                         documents.append(i)
