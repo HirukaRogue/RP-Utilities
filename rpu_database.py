@@ -68,13 +68,16 @@ class Database:
         buffer = buffer['buffer']
 
         database = await self.db['characters'].find_one({'user_id': user_id})
-        char_list = database['characters']
-        char_buffer = list()
-        if len(buffer) > 0:
-            for i in buffer:
-                char_buffer.append(char_list[i])
+        if database:
+            char_list = database['characters']
+            char_buffer = list()
+            if len(buffer) > 0:
+                for i in buffer:
+                    char_buffer.append(char_list[i])
 
-        return char_buffer
+            return char_buffer
+        else:
+            return list()
     
     # this is a buff register
     async def buffer_reg(self, user_id, registry):
