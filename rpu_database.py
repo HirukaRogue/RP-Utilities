@@ -238,8 +238,15 @@ class Database:
             instances = list()
 
             for num, i in enumerate(char_list):
-                if name in i['name'] or prompt_prefix in i['prompt_prefix']:
-                    instances.append(num)
+                if name and prompt_prefix:
+                    if name in i['name'] or prompt_prefix in i['prompt_prefix']:
+                        instances.append(num)
+                elif name:
+                    if name in i['name']:
+                        instances.append(num)
+                elif prompt_prefix:
+                    if prompt_prefix in i['prompt_prefix']:
+                        instances.append(num)
 
             if len(instances) == 0:
                 return "ERROR"

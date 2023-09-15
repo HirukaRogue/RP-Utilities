@@ -32,14 +32,7 @@ class Bot(commands.Bot):
         for filename in os.listdir("./cogs"):
             if filename.endswith(".py"):
                 await self.load_extension(f"cogs.{filename[:-3]}")
-        guild = discord.Object(1135999359985647706)
-        # tree = self.tree
-        # tree.clear_commands(guild=guild)
-        # await tree.sync(guild=guild)
-        # tree.clear_commands(guild=guild)
-        # await tree.sync()
         await self.tree.sync()
-        # print(self.tree.get_command('character').get_command('default').get_command('image_set').binding)
 
     async def close(self) -> None:
         await super().close()
