@@ -27,8 +27,7 @@ class MacroCog(commands.Cog):
         else:
             pattern = r'!(\w+)\s*\((.*?)\)'
             commandos = re.findall(pattern, args)
-            print(commandos)
-            await ctx.send("Testado")
+            await ctx.send(commandos)
 
 
     @_macro.command(name="edit")

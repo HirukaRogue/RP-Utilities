@@ -7,6 +7,7 @@ import asyncio
 from pagination import Paginator
 from milascenous import is_link
 from milascenous import unify
+from help import Help
 
 from copy import deepcopy
 
@@ -20,15 +21,17 @@ class CharactersCog(commands.Cog):
 
     @commands.hybrid_group(name = "character", fallback="help", invoke_without_command = True, aliases = ["char"])
     async def _character(self, ctx):
-        await ctx.send("character related commands, use default if you are a starter.")
+        embed = discord.Embed(
+            description=Help.character()
+        )
+        await ctx.send(embed)
 
     @_character.group(name = "default", fallback="help", invoke_without_command = True, aliases = ["def"])
     async def _character_default(self, ctx):
-        await ctx.send("""default characters creation
-                       This is for when you don't plan to use templates or
-                       you are a newbie with this bot. Also this option is
-                       The first way of creating character in this beta version.
-                       """)
+        embed = discord.Embed(
+            description=Help.char_default()
+        )
+        await ctx.send(embed)
 
     @_character.command(name = "search")
     async def _character_search(self, ctx, search: str | None):
@@ -106,64 +109,89 @@ class CharactersCog(commands.Cog):
         result_menu = Paginator(pages)
 
         await result_menu.start(ctx)
+    
+    @_character.command(name = "search_help")
+    async def _character_search_help(self, ctx, search: str | None):
+        embed = discord.Embed(
+            description=Help.char_search()
+        )
+        await ctx.send(embed)
 
     @_character_default.command(name="create_default", aliases = ["create"], with_app_command = False)
-    async def _character_default_create(self, ctx, name: str, prompt: str, image: str | None):
-        user = ctx.author.id
-        
-        if len(prompt) <= 17 and not prompt.startswith("#") and prompt.endswith(":"):
-            response = "Error, the character with this prompt already exist." if await ctx.bot.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=image) else "Character created."
-        elif len(prompt) > 17:
-            response = "Your prompt cannot have more than 16 characters"
-        elif prompt.startswith("##"):
-            response = "You cannot start your prompt with #, since # is reserved for macros"
-        elif not prompt.endswith(":"):
-            response = "Your prompt shall ends with :"
+    async def _character_default_create(self, ctx, name: str | None, prompt: str | None, image: str | None):
+        if name and prompt:
+            user = ctx.author.id
+            
+            if len(prompt) <= 17 and not prompt.startswith("#") and prompt.endswith(":"):
+                response = "Error, the character with this prompt already exist." if await ctx.bot.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=image) else "Character created."
+            elif len(prompt) > 17:
+                response = "Your prompt cannot have more than 16 characters"
+            elif prompt.startswith("##"):
+                response = "You cannot start your prompt with #, since # is reserved for macros"
+            elif not prompt.endswith(":"):
+                response = "Your prompt shall ends with :"
 
-        await ctx.send(response)
+            await ctx.send(response)
+        else:
+            embed = discord.Embed(
+            description=Help.char_default_create()
+            )
+            await ctx.send(embed)
 
     # Slash version
     @_character_default.app_command.command(name = "create",)
-    async def _character_default_create_slash(self, interaction: discord.Interaction, name: str, prompt: str, image_1: discord.Attachment | None, image_2: str | None):
-        user = interaction.user.id
-        url = image_1.url if image_1 else image_2
+    async def _character_default_create_slash(self, interaction: discord.Interaction, name: str | None, prompt: str | None, image_1: discord.Attachment | None, image_2: str | None):
+        if name and prompt:
+            user = interaction.user.id
+            url = image_1.url if image_1 else image_2
 
-        if len(prompt) <= 17 and not prompt.startswith("#") and prompt.endswith(":"):
-            response = "Error, the character with this prompt already exist." if await self.client.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=url) else "Character created."
-        elif len(prompt) > 17:
-            response = "Your prompt cannot have more than 16 characters"
-        elif prompt.startswith("##"):
-            response = "You cannot start your prompt with #, since # is reserved for macros"
-        elif not prompt.endswith(":"):
-            response = "Your prompt shall ends with :"
+            if len(prompt) <= 17 and not prompt.startswith("#") and prompt.endswith(":"):
+                response = "Error, the character with this prompt already exist." if await self.client.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=url) else "Character created."
+            elif len(prompt) > 17:
+                response = "Your prompt cannot have more than 16 characters"
+            elif prompt.startswith("##"):
+                response = "You cannot start your prompt with #, since # is reserved for macros"
+            elif not prompt.endswith(":"):
+                response = "Your prompt shall ends with :"
 
-        await interaction.response.send_message(response)
-
-    @_character_default.command(name="edit_name")
-    async def _character_default_edit_name(self, ctx, old_name: str, new_name: str):
-        user = ctx.author.id
-
-        result = await ctx.bot.database.update_default_character(user_id = user, old_name = old_name, new_name = new_name)
-        
-        if result == "ERROR":
-            ctx.send("Character name not found")
-        elif result == "SUCESS":
-            ctx.send(f"Character name edited from {old_name} to {new_name}")
+            await interaction.response.send_message(response)
         else:
             embed = discord.Embed(
-                title="There is more than 1 result for what you want to edit",
-                description="try again with 'edit name with prompt'"
+            description=Help.char_default_create()
             )
-            names = ""
+            await interaction.response.send_message(embed)
 
-            for data in result:
-                piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
-                names = names+piv_str
+    @_character_default.command(name="edit_name")
+    async def _character_default_edit_name(self, ctx, old_name: str | None, new_name: str | None):
+        if old_name and new_name:
+            user = ctx.author.id
 
-            embed.add_field(name="Name", value=names)
+            result = await ctx.bot.database.update_default_character(user_id = user, old_name = old_name, new_name = new_name)
+            
+            if result == "ERROR":
+                ctx.send("Character name not found")
+            elif result == "SUCESS":
+                ctx.send(f"Character name edited from {old_name} to {new_name}")
+            else:
+                embed = discord.Embed(
+                    title="There is more than 1 result for what you want to edit",
+                    description="try again with 'edit name with prompt'"
+                )
+                names = ""
 
-            embed.set_author(name="RP Utilities")
-            await ctx.send(embed=embed)
+                for data in result:
+                    piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
+                    names = names+piv_str
+
+                embed.add_field(name="Name", value=names)
+
+                embed.set_author(name="RP Utilities")
+                await ctx.send(embed=embed)
+        else:
+            embed = discord.Embed(
+            description=Help.char_default_create()
+            )
+            await interaction.response.send_message(embed)
 
     @_character_default.command(name="edit_name_by_prompt")
     async def _character_default_edit_name_by_prompt(self, ctx, prompt: str, new_name: str):
