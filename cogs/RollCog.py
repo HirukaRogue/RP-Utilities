@@ -28,7 +28,7 @@ class RollCog(commands.Cog):
             #function to detect the interaction through numbers and
             #which numbers will interact with the operator
             for indz in args:
-                if indz == "+" or indz == "-" or indz == "*" or indz == "/" or indz == "(" or indz == ")" or indz == "[" or indz == "]":
+                if indz in ("+", "-", "*", "/", "(", ")", "[", "]"):
                     indice.append(indz)
 
             #gather dice roll and numbers to calculate, sotring them into args_result, being args result the raw input
