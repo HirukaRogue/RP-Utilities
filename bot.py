@@ -25,7 +25,6 @@ class Bot(commands.Bot):
 
     async def setup_hook(self) -> None:
         await self.database.connect("mongodb://localhost:27017")
-        self.db_loop = self.database.dev_client.get_io_loop()
         for extension in EXTENSIONS:
             await self.load_extension(extension)
         await self.add_cog(PrefixCog(self))
@@ -34,9 +33,9 @@ class Bot(commands.Bot):
                 await self.load_extension(f"cogs.{filename[:-3]}")
         await self.tree.sync()
 
-    async def close(self) -> None:
-        await super().close()
-        await self.database.close()
+    # async def close(self) -> None:
+    #     await super().close()
+    #     await self.database.close()
 
 async def prefix_setup(bot, message):
         prefix = await bot.database.get_prefix(guild_id=message.guild.id)
@@ -63,5 +62,7 @@ class PrefixCog(commands.Cog):
         await self.bot.database.remove_prefix(guild_id=ctx.guild.id)
         await ctx.send(f"The prefix has been reset to `{DEFAULT_PREFIX}`.")
 
+bot = Bot()
+
 def run_bot():
-    Bot().run(bot_token.return_token())
+    bot.run(bot_token.return_token())

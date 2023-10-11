@@ -126,7 +126,7 @@ class RollCog(commands.Cog):
         
         else:
             embed = discord.Embed(
-                description=await Help.roll()
+                description= Help(ctx.guild).roll()
             )
             await ctx.send(embed=embed)
 
@@ -247,7 +247,7 @@ class RollCog(commands.Cog):
             
             else:
                 embed = discord.Embed(
-                    description=await Help.roll()
+                    description= Help(interaction.guild).roll()
                 )
                 await interaction.response.send_message(embed=embed)
 

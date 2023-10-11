@@ -22,14 +22,14 @@ class CharactersCog(commands.Cog):
     @commands.hybrid_group(name = "character", fallback="help", invoke_without_command = True, aliases = ["char"])
     async def _character(self, ctx):
         embed = discord.Embed(
-            description=await Help.character()
+            description= Help(ctx.guild).character()
         )
         await ctx.send(embed)
 
     @_character.group(name = "default", fallback="help", invoke_without_command = True, aliases = ["def"])
     async def _character_default(self, ctx):
         embed = discord.Embed(
-            description=await Help.char_default()
+            description= Help(ctx.guild).char_default()
         )
         await ctx.send(embed)
 
@@ -113,7 +113,7 @@ class CharactersCog(commands.Cog):
     @_character.command(name = "search_help")
     async def _character_search_help(self, ctx):
         embed = discord.Embed(
-            description=await Help.char_search()
+            description= Help(ctx.guild).char_search()
         )
         await ctx.send(embed)
 
@@ -134,7 +134,7 @@ class CharactersCog(commands.Cog):
             await ctx.send(response)
         else:
             embed = discord.Embed(
-            description=await Help.char_default_create(ctx.guild.id)
+            description= Help(ctx.guild).char_default_create()
             )
             await ctx.send(embed)
 
@@ -157,7 +157,7 @@ class CharactersCog(commands.Cog):
             await interaction.response.send_message(response)
         else:
             embed = discord.Embed(
-            description=await Help.char_default_create()
+            description= Help(interaction.guild).char_default_create()
             )
             await interaction.response.send_message(embed)
 
@@ -189,7 +189,7 @@ class CharactersCog(commands.Cog):
                 await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
-            description=await Help.char_default_edit_name()
+            description= Help(ctx.guild).char_default_edit_name()
             )
             await ctx.send(embed)
 
@@ -206,7 +206,7 @@ class CharactersCog(commands.Cog):
                 await ctx.send(f"Character name edited of prompt {prompt} to {new_name}")
         else:
             embed = discord.Embed(
-            description=await Help.char_default_edit_name_by_prompt(ctx.guild.id)
+            description= Help(ctx.guild).char_default_edit_name_by_prompt()
             )
             await ctx.send(embed)
 
@@ -223,7 +223,7 @@ class CharactersCog(commands.Cog):
                 await ctx.send(f"Character prompt edited from {old_prompt} to {new_prompt}")
         else:
             embed = discord.Embed(
-            description=await Help.char_default_edit_prompt()
+            description= Help(ctx.guild).char_default_edit_prompt()
             )
             await ctx.send(embed)
 
@@ -265,7 +265,7 @@ class CharactersCog(commands.Cog):
         
         else:
             embed = discord.Embed(
-            description=await Help.char_default_delete()
+            description= Help(ctx.guild).char_default_delete()
             )
             await ctx.send(embed)
             
@@ -308,7 +308,7 @@ class CharactersCog(commands.Cog):
         
         else:
             embed = discord.Embed(
-            description=await Help.char_default_image()
+            description= Help(ctx.guild).char_default_image()
             )
             await ctx.send(embed)
 
@@ -350,7 +350,7 @@ class CharactersCog(commands.Cog):
 
         else:
             embed = await discord.Embed(
-            description=await Help.char_default_image_set()
+            description= Help(ctx.guild).char_default_image_set()
             )
             await ctx.send(embed)
 
@@ -393,7 +393,7 @@ class CharactersCog(commands.Cog):
 
         else:
             embed = discord.Embed(
-            description=await Help.char_default_image_set()
+            description= Help(interaction.guild).char_default_image_set()
             )
             await interaction.response.send_message(embed)
     
@@ -412,7 +412,7 @@ class CharactersCog(commands.Cog):
         
         else:
             embed = discord.Embed(
-            description=await Help.char_default_image_by_prompt()
+            description= Help(ctx.guild).char_default_image_by_prompt()
             )
             await ctx.send(embed)
 
@@ -430,7 +430,7 @@ class CharactersCog(commands.Cog):
         
         else:
             embed = await discord.Embed(
-            description=Help.char_default_image_set_by_prompt()
+            description= Help(ctx.guild).char_default_image_set_by_prompt()
             )
             await ctx.send(embed)
 
@@ -449,7 +449,7 @@ class CharactersCog(commands.Cog):
         
         else:
             embed = discord.Embed(
-            description=await Help.char_default_image_set_by_prompt()
+            description= Help(interaction.guild).char_default_image_set_by_prompt()
             )
             await interaction.response.send_message(embed)
 

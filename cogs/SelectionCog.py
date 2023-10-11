@@ -29,7 +29,7 @@ class SelectionCog(commands.Cog):
     @commands.command()
     async def select_help(self, ctx):
         embed = discord.Embed(
-            description=await Help.select()
+            description= Help(ctx.guild).select()
         )
 
         ctx.send(embed=embed)
@@ -48,7 +48,7 @@ class SelectionCog(commands.Cog):
             await interaction.response.send_message(embed=embed)
         else:
             embed = discord.Embed(
-            description=await Help.select()
+            description= Help(interaction.guild).select()
             )
 
             await interaction.response.send_message(embed=embed)
