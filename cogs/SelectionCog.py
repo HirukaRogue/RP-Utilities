@@ -24,18 +24,18 @@ class SelectionCog(commands.Cog):
             title="Selected:",
             description=selected
         )
-        ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.command()
     async def select_help(self, ctx):
         embed = discord.Embed(
-            description=Help.select()
+            description=await Help.select()
         )
 
         ctx.send(embed=embed)
     
     @app_commands.command(name="select")
-    async def select_slash(self, ctx: discord.Interaction, args: str | None = None):
+    async def select_slash(self, interaction: discord.Interaction, args: str | None = None):
         if args:
             pattern = r'\((.*?)\)'
             matches = re.findall(pattern, args)
@@ -45,13 +45,13 @@ class SelectionCog(commands.Cog):
                 title="Selected:",
                 description=selected
             )
-            await ctx.response.send_message(embed=embed)
+            await interaction.response.send_message(embed=embed)
         else:
             embed = discord.Embed(
-            description=Help.select()
+            description=await Help.select()
             )
 
-            ctx.response.send_message(embed=embed)
+            await interaction.response.send_message(embed=embed)
 
 async def setup(client):
     await client.add_cog(SelectionCog(client))

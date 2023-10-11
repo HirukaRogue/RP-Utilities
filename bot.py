@@ -63,4 +63,5 @@ class PrefixCog(commands.Cog):
         await self.bot.database.remove_prefix(guild_id=ctx.guild.id)
         await ctx.send(f"The prefix has been reset to `{DEFAULT_PREFIX}`.")
 
-Bot().run(bot_token.return_token())
+def run_bot():
+    Bot().run(bot_token.return_token())

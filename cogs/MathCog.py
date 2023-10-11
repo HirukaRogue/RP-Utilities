@@ -25,7 +25,7 @@ class MathCog(commands.Cog):
             await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
-                description=Help.math()
+                description=await Help.math()
             )
             await ctx.send(embed=embed)
 
@@ -41,7 +41,7 @@ class MathCog(commands.Cog):
             await interaction.response.send_message(embed=embed)
         else:
             embed = discord.Embed(
-                description=Help.math()
+                description=await Help.math()
             )
             await interaction.response.send_message(embed=embed)
 
