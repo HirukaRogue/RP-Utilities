@@ -5,6 +5,7 @@ import asyncio
 from discord.ext import commands
 import os
 from rpu_database import Database
+from help import Help
 
 
 bot_status = ["initializing", "active", "shutting down"]
@@ -21,6 +22,7 @@ class Bot(commands.Bot):
             case_insensitive=True,
         )
         self.database = Database()
+        self.help_command = commands.MinimalHelpCommand()
         print("Bot Connected!")
 
     async def setup_hook(self) -> None:

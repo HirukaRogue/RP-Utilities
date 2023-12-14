@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 from discord.ext import menus
 from discord import ui
@@ -19,21 +20,18 @@ class CharactersCog(commands.Cog):
     async def on_ready(self):
         print("CharactersCog.py is ready")
 
-    @commands.hybrid_group(name = "character", fallback="help", invoke_without_command = True, aliases = ["char"])
+    @commands.hybrid_group(name = "character", fallback="help", invoke_without_command = True, aliases = ["char"], help="character", description="Category of commands related to character creation")
     async def _character(self, ctx):
-        embed = discord.Embed(
-            description= Help(ctx.guild).character()
-        )
-        await ctx.send(embed)
+        pass
 
-    @_character.group(name = "default", fallback="help", invoke_without_command = True, aliases = ["def"])
+    @_character.group(name = "default", fallback="help", invoke_without_command = True, aliases = ["def"], help="character default", description="this section you enter default character creation")
     async def _character_default(self, ctx):
-        embed = discord.Embed(
-            description= Help(ctx.guild).char_default()
-        )
-        await ctx.send(embed)
+        pass
 
-    @_character.command(name = "search")
+    @_character.command(name = "search", help="character search", description="search characters with an input, type nothing in the input you get a list of your characters")
+    @app_commands.describe(
+        search="search input, works like google, leave in blank to show a list of your characters"
+    )
     async def _character_search(self, ctx, search: str | None):
         user = ctx.author.id
         prompt_result = f"Your result with {search}" if search else "All your characters"
@@ -109,349 +107,310 @@ class CharactersCog(commands.Cog):
         result_menu = Paginator(pages)
 
         await result_menu.start(ctx)
-    
-    @_character.command(name = "search_help")
-    async def _character_search_help(self, ctx):
-        embed = discord.Embed(
-            description= Help(ctx.guild).char_search()
-        )
-        await ctx.send(embed)
+        
 
-    @_character_default.command(name="create_default", aliases = ["create"], with_app_command = False)
-    async def _character_default_create(self, ctx, name: str | None, prompt: str | None, image: str | None):
-        if name and prompt:
-            user = ctx.author.id
-            
-            if len(prompt) <= 17 and not prompt.startswith("#") and prompt.endswith(":"):
-                response = "Error, the character with this prompt already exist." if await ctx.bot.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=image) else "Character created."
-            elif len(prompt) > 17:
-                response = "Your prompt cannot have more than 16 characters"
-            elif prompt.startswith("##"):
-                response = "You cannot start your prompt with #, since # is reserved for macros"
-            elif not prompt.endswith(":"):
-                response = "Your prompt shall ends with :"
+    @_character_default.command(name="create_default", aliases = ["create"], with_app_command = False, help="character default create")
+    async def _character_default_create(self, ctx, name: str, prompt: str, image: str | None):
+        user = ctx.author.id
+        
+        if len(prompt) <= 17 and not prompt.startswith("#") and prompt.endswith(":"):
+            response = "Error, the character with this prompt already exist." if await ctx.bot.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=image) else "Character created."
+        elif len(prompt) > 17:
+            response = "Your prompt cannot have more than 16 characters"
+        elif prompt.startswith("##"):
+            response = "You cannot start your prompt with #, since # is reserved for macros"
+        elif not prompt.endswith(":"):
+            response = "Your prompt shall ends with :"
 
-            await ctx.send(response)
-        else:
-            embed = discord.Embed(
-            description= Help(ctx.guild).char_default_create()
-            )
-            await ctx.send(embed)
+        await ctx.send(response)
 
     # Slash version
-    @_character_default.app_command.command(name = "create",)
-    async def _character_default_create_slash(self, interaction: discord.Interaction, name: str | None, prompt: str | None, image_1: discord.Attachment | None, image_2: str | None):
-        if name and prompt:
-            user = interaction.user.id
-            url = image_1.url if image_1 else image_2
+    @_character_default.app_command.command(name = "create", description="create a default character")
+    @app_commands.describe(
+        name="set a name for your character",
+        prompt="set a prefix for your character, 16 characters at max and needs to finish with : to work",
+        image_1="set a profile picture for your character, only accepts annexes",
+        image_2="set a profile picture for your character, only accepts url"
+    )
+    async def _character_default_create_slash(self, interaction: discord.Interaction, name: str, prompt: str, image_1: discord.Attachment | None, image_2: str | None):
+        user = interaction.user.id
+        url = image_1.url if image_1 else image_2
 
-            if len(prompt) <= 17 and not prompt.startswith("#") and prompt.endswith(":"):
-                response = "Error, the character with this prompt already exist." if await self.client.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=url) else "Character created."
-            elif len(prompt) > 17:
-                response = "Your prompt cannot have more than 16 characters"
-            elif prompt.startswith("##"):
-                response = "You cannot start your prompt with #, since # is reserved for macros"
-            elif not prompt.endswith(":"):
-                response = "Your prompt shall ends with :"
+        if len(prompt) <= 18 and not prompt.startswith("##") and prompt.endswith(":"):
+            response = "Error, the character with this prompt already exist." if await self.client.database.register_default_character(user_id=user, name=name, prompt_prefix=prompt, image=url) else "Character created."
+        elif len(prompt) > 18:
+            response = "Your prompt cannot have more than 16 characters"
+        elif prompt.startswith("##"):
+            response = "You cannot start your prompt with #, since # is reserved for macros"
+        elif not prompt.endswith(":"):
+            response = "Your prompt shall ends with :"
 
-            await interaction.response.send_message(response)
+        await interaction.response.send_message(response)
+
+    @_character_default.command(name="edit_name", help="character default edit name", description="change the name of your character by their actual name")
+    @app_commands.describe(
+        old_name="your character actual name",
+        new_name="your character new name"
+    )
+    async def _character_default_edit_name(self, ctx, old_name: str, new_name: str):
+        user = ctx.author.id
+
+        result = await ctx.bot.database.update_default_character(user_id = user, old_name = old_name, new_name = new_name)
+        
+        if result == "ERROR":
+            ctx.send("Character name not found")
+        elif result == "SUCESS":
+            ctx.send(f"Character name edited from {old_name} to {new_name}")
         else:
             embed = discord.Embed(
-            description= Help(interaction.guild).char_default_create()
+                title="There is more than 1 result for what you want to edit",
+                description="try again with 'edit name with prompt'"
             )
-            await interaction.response.send_message(embed)
+            names = ""
 
-    @_character_default.command(name="edit_name")
-    async def _character_default_edit_name(self, ctx, old_name: str | None, new_name: str | None):
-        if old_name and new_name:
-            user = ctx.author.id
+            for data in result:
+                piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
+                names = names+piv_str
 
-            result = await ctx.bot.database.update_default_character(user_id = user, old_name = old_name, new_name = new_name)
-            
-            if result == "ERROR":
-                ctx.send("Character name not found")
-            elif result == "SUCESS":
-                ctx.send(f"Character name edited from {old_name} to {new_name}")
-            else:
-                embed = discord.Embed(
-                    title="There is more than 1 result for what you want to edit",
-                    description="try again with 'edit name with prompt'"
-                )
-                names = ""
+            embed.add_field(name="Name", value=names)
 
-                for data in result:
-                    piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
-                    names = names+piv_str
+            embed.set_author(name="RP Utilities")
+            await ctx.send(embed=embed)
 
-                embed.add_field(name="Name", value=names)
 
-                embed.set_author(name="RP Utilities")
-                await ctx.send(embed=embed)
-        else:
-            embed = discord.Embed(
-            description= Help(ctx.guild).char_default_edit_name()
-            )
-            await ctx.send(embed)
-
-    @_character_default.command(name="edit_name_by_prompt")
+    @_character_default.command(name="edit_name_by_prompt", help="character default edit name by prompt", description="change the name of your character by their prefix/prompt")
+    @app_commands.describe(
+        prompt="your character prefix",
+        new_name="your character new name"
+    )
     async def _character_default_edit_name_by_prompt(self, ctx, prompt: str | None, new_name: str | None):
-        if prompt and new_name:
-            user = ctx.author.id
+        user = ctx.author.id
 
-            result = await ctx.bot.database.update_default_character(user_id = user, old_prompt_prefix = prompt, new_name=new_name)
-            
-            if result == "ERROR":
-                await ctx.send("Character name not found")
-            elif result == "SUCESS":
-                await ctx.send(f"Character name edited of prompt {prompt} to {new_name}")
-        else:
-            embed = discord.Embed(
-            description= Help(ctx.guild).char_default_edit_name_by_prompt()
-            )
-            await ctx.send(embed)
+        result = await ctx.bot.database.update_default_character(user_id = user, old_prompt_prefix = prompt, new_name=new_name)
+        
+        if result == "ERROR":
+            await ctx.send("Character name not found")
+        elif result == "SUCESS":
+            await ctx.send(f"Character name edited of prompt {prompt} to {new_name}")
 
-    @_character_default.command(name="edit_prompt")
-    async def _character_default_edit_prompt(self, ctx, old_prompt: str | None, new_prompt: str | None):
-        if old_prompt and new_prompt:
-            user = ctx.author.id
 
-            result = await ctx.bot.database.update_default_character(user_id = user, old_prompt_prefix = old_prompt, new_prompt_prefix=new_prompt)
-            
-            if result == "ERROR":
-                await ctx.send("Character name not found")
-            elif result == "SUCESS":
-                await ctx.send(f"Character prompt edited from {old_prompt} to {new_prompt}")
-        else:
-            embed = discord.Embed(
-            description= Help(ctx.guild).char_default_edit_prompt()
-            )
-            await ctx.send(embed)
+    @_character_default.command(name="edit_prompt", help="character default edit prompt", description="change your character prefix/prompt")
+    @app_commands.describe(
+        old_prompt="your character actual prefix",
+        new_prompt="your character new prefix"
+    )
+    async def _character_default_edit_prompt(self, ctx, old_prompt: str, new_prompt: str):
+        user = ctx.author.id
 
-    @_character_default.command(name="delete", aliases = ["del"])
+        result = await ctx.bot.database.update_default_character(user_id = user, old_prompt_prefix = old_prompt, new_prompt_prefix=new_prompt)
+        
+        if result == "ERROR":
+            await ctx.send("Character name not found")
+        elif result == "SUCESS":
+            await ctx.send(f"Character prompt edited from {old_prompt} to {new_prompt}")
+
+
+    @_character_default.command(name="delete", aliases = ["del"], help="character default delete", description="delete a character")
+    @app_commands.describe(
+        deleting_prompt="your character name or prompt to be deleted"
+    )
     async def _character_default_delete(self, ctx, deleting_prompt: str | None):
-        if deleting_prompt:
-            user = ctx.author.id
+        user = ctx.author.id
 
-            result = await ctx.bot.database.delete_default_character(user_id=user, prompt_prefix=deleting_prompt)
-            if result == "ERROR":
-                result = await ctx.bot.database.delete_default_character(user_id=user, name=deleting_prompt)
-            elif result and result != "SUCESS":
-                sub_result = await ctx.bot.database.search_default_character(user_id=user, name=deleting_prompt)
-                result = unify(result, sub_result)
+        result = await ctx.bot.database.delete_default_character(user_id=user, prompt_prefix=deleting_prompt)
+        if result == "ERROR":
+            result = await ctx.bot.database.delete_default_character(user_id=user, name=deleting_prompt)
+        elif result and result != "SUCESS":
+            sub_result = await ctx.bot.database.search_default_character(user_id=user, name=deleting_prompt)
+            result = unify(result, sub_result)
 
-            if result == "ERROR":
-                await ctx.send("Character not found.")
-            elif result == "SUCESS":
-                await ctx.send("Character deleted.")
-            else:
-                names = ""
-                prompts = ""
-
-                embed = discord.Embed(
-                title="There is more than 1 result for what you want to delete",
-                description="type the full name or prefix to delete the one you want"
-                )
-                for data in result:
-                    piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
-                    names = names + piv_str
-                    piv_str = f"{data['prompt_prefix']}\n" if data is not result[-1] else data['prompt_prefix']
-                    prompts = prompts + piv_str
-                
-                embed.add_field(name="Name", value=names)
-                embed.add_field(name="Prompt", value=prompts)
-
-                embed.set_author(name="RP Utilities")
-                await ctx.send(embed=embed)
-        
+        if result == "ERROR":
+            await ctx.send("Character not found.")
+        elif result == "SUCESS":
+            await ctx.send("Character deleted.")
         else:
+            names = ""
+            prompts = ""
+
             embed = discord.Embed(
-            description= Help(ctx.guild).char_default_delete()
+            title="There is more than 1 result for what you want to delete",
+            description="type the full name or prefix to delete the one you want"
             )
-            await ctx.send(embed)
+            for data in result:
+                piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
+                names = names + piv_str
+                piv_str = f"{data['prompt_prefix']}\n" if data is not result[-1] else data['prompt_prefix']
+                prompts = prompts + piv_str
             
-    @_character_default.command(name="image", aliases=["img", "pfp", "profile"])
-    async def _character_default_image(self, ctx, name: str | None):
-        if name:
-            user = ctx.author.id
+            embed.add_field(name="Name", value=names)
+            embed.add_field(name="Prompt", value=prompts)
 
-            result = await ctx.bot.database.quick_search_default_character(user_id=user, name=name)
-
-            if result is None:
-                await ctx.send(f"you have no characters with name {name}")
-            elif len(result) == 1:
-                result = result[0]
-                await ctx.send(result['image_url'])
-            else:
-                embed = discord.Embed(
-                    title="There is more than 1 result for what you want to show image",
-                    description="try again showing image with prompt'"
-                )
-                names = ""
-                prompts = ""
-                images = ""
-
-                for data in result:
-                    piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
-                    names = names+piv_str
-                    piv_str = f"{data['prompt_prefix']}\n" if data is not result[-1] else data['prompt_prefix']
-                    prompts = prompts + piv_str
-                    if is_link(data['image_url']):
-                        piv_str = f"[Link]({data['image_url']} \'Click to open\')\n" if data is not result[-1] else f"[Link]({data['image_url']} \'Click to open\')"
-                    else:
-                        piv_str = "None\n" if data is not result[-1] else "None"
-                    images = images + piv_str
-
-                embed.add_field(name="Name", value=names)
-
-                embed.set_author(name="RP Utilities")
-                await ctx.send(embed=embed)
+            embed.set_author(name="RP Utilities")
+            await ctx.send(embed=embed)
         
+            
+    @_character_default.command(name="image", aliases=["img", "pfp", "profile"], help="character default image", description="shows the pfp of your character by their name")
+    @app_commands.describe(
+        name="your character name that you want to show pfp"
+    )
+    async def _character_default_image(self, ctx, name: str):
+        user = ctx.author.id
+
+        result = await ctx.bot.database.quick_search_default_character(user_id=user, name=name)
+
+        if result is None:
+            await ctx.send(f"you have no characters with name {name}")
+        elif len(result) == 1:
+            result = result[0]
+            await ctx.send(result['image_url'])
         else:
             embed = discord.Embed(
-            description= Help(ctx.guild).char_default_image()
+                title="There is more than 1 result for what you want to show image",
+                description="try again showing image with prompt'"
             )
-            await ctx.send(embed)
+            names = ""
+            prompts = ""
+            images = ""
 
-    @_character_default.command(name="set image", aliases=["img_set", "pfp_set", "profile_set"], with_app_command = False)
+            for data in result:
+                piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
+                names = names+piv_str
+                piv_str = f"{data['prompt_prefix']}\n" if data is not result[-1] else data['prompt_prefix']
+                prompts = prompts + piv_str
+                if is_link(data['image_url']):
+                    piv_str = f"[Link]({data['image_url']} \'Click to open\')\n" if data is not result[-1] else f"[Link]({data['image_url']} \'Click to open\')"
+                else:
+                    piv_str = "None\n" if data is not result[-1] else "None"
+                images = images + piv_str
+
+            embed.add_field(name="Name", value=names)
+
+            embed.set_author(name="RP Utilities")
+            await ctx.send(embed=embed)
+        
+
+    @_character_default.command(name="set image", aliases=["img_set", "pfp_set", "profile_set"], with_app_command = False, help="character default image set")
     async def _character_default_image_set(self, ctx, name: str | None, image: str | None):
-        if name and image:
-            user = ctx.author.id
+        user = ctx.author.id
 
-            result = await ctx.bot.database.update_default_character(user_id=user, old_name=name, new_image=image)
+        result = await ctx.bot.database.update_default_character(user_id=user, old_name=name, new_image=image)
 
-            if result is None:
-                await ctx.send(f"you have no characters with name {name}")
-            elif result == "SUCESS":
-                await ctx.send(f"image set to {image}")
-            else:
-                embed = discord.Embed(
-                    title="There is more than 1 result for what you want to set image",
-                    description="try again set image with prompt"
-                )
-                names = ""
-                prompts = ""
-                images = ""
-
-                for data in result:
-                    piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
-                    names = names+piv_str
-                    piv_str = f"{data['prompt_prefix']}\n" if data is not result[-1] else data['prompt_prefix']
-                    prompts = prompts + piv_str
-                    if is_link(data['image_url']):
-                        piv_str = f"[Link]({data['image_url']} \'Click to open\')\n" if data is not result[-1] else f"[Link]({data['image_url']} \'Click to open\')"
-                    else:
-                        piv_str = "None\n" if data is not result[-1] else "None"
-                    images = images + piv_str
-
-                embed.add_field(name="Name", value=names)
-
-                embed.set_author(name="RP Utilities")
-                await ctx.send(embed=embed)
-
-        else:
-            embed = await discord.Embed(
-            description= Help(ctx.guild).char_default_image_set()
-            )
-            await ctx.send(embed)
-
-    @_character_default.app_command.command(name = "image_set",)
-    async def _character_default_image_set_slash(self, interaction: discord.Interaction, name: str | None, image1: discord.Attachment | None, image2: str | None):
-        if name and image1 or name and image2:
-            user = interaction.user.id
-            url = image1.url if image1 else image2
-
-            result = await self.client.database.update_default_character(user_id=user, old_name=name, new_image=url)
-
-            if result is None:
-                await interaction.response.send_message(f"you have no characters with name {name}")
-            elif result == "SUCESS":
-                await interaction.response.send_message(f"image set to {url}")
-            else:
-                embed = discord.Embed(
-                    title="There is more than 1 result for what you want to set image",
-                    description="try again set image with prompt"
-                )
-                names = ""
-                prompts = ""
-                images = ""
-
-                for data in result:
-                    piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
-                    names = names+piv_str
-                    piv_str = f"{data['prompt_prefix']}\n" if data is not result[-1] else data['prompt_prefix']
-                    prompts = prompts + piv_str
-                    if is_link(data['image_url']):
-                        piv_str = f"[Link]({data['image_url']} \'Click to open\')\n" if data is not result[-1] else f"[Link]({data['image_url']} \'Click to open\')"
-                    else:
-                        piv_str = "None\n" if data is not result[-1] else "None"
-                    images = images + piv_str
-
-                embed.add_field(name="Name", value=names)
-
-                embed.set_author(name="RP Utilities")
-                await interaction.response.send_message(embed=embed)
-
+        if result is None:
+            await ctx.send(f"you have no characters with name {name}")
+        elif result == "SUCESS":
+            await ctx.send(f"image set to {image}")
         else:
             embed = discord.Embed(
-            description= Help(interaction.guild).char_default_image_set()
+                title="There is more than 1 result for what you want to set image",
+                description="try again set image with prompt"
             )
-            await interaction.response.send_message(embed)
+            names = ""
+            prompts = ""
+            images = ""
+
+            for data in result:
+                piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
+                names = names+piv_str
+                piv_str = f"{data['prompt_prefix']}\n" if data is not result[-1] else data['prompt_prefix']
+                prompts = prompts + piv_str
+                if is_link(data['image_url']):
+                    piv_str = f"[Link]({data['image_url']} \'Click to open\')\n" if data is not result[-1] else f"[Link]({data['image_url']} \'Click to open\')"
+                else:
+                    piv_str = "None\n" if data is not result[-1] else "None"
+                images = images + piv_str
+
+            embed.add_field(name="Name", value=names)
+
+            embed.set_author(name="RP Utilities")
+            await ctx.send(embed=embed)
+
+
+    @_character_default.app_command.command(name = "image_set", description="change your character pfp by their name")
+    @app_commands.describe(
+        name="your character name to have their pfp changed",
+        image1="your character new pfp, only accepts annexes",
+        image2="your character new pfp, only accepts URL"
+    )
+    async def _character_default_image_set_slash(self, interaction: discord.Interaction, name: str, image1: discord.Attachment | None, image2: str | None):
+        user = interaction.user.id
+        url = image1.url if image1 else image2
+
+        result = await self.client.database.update_default_character(user_id=user, old_name=name, new_image=url)
+
+        if result is None:
+            await interaction.response.send_message(f"you have no characters with name {name}")
+        elif result == "SUCESS":
+            await interaction.response.send_message(f"image set to {url}")
+        else:
+            embed = discord.Embed(
+                title="There is more than 1 result for what you want to set image",
+                description="try again set image with prompt"
+            )
+            names = ""
+            prompts = ""
+            images = ""
+
+            for data in result:
+                piv_str = f"{data['name']}\n" if data is not result[-1] else data['name']
+                names = names+piv_str
+                piv_str = f"{data['prompt_prefix']}\n" if data is not result[-1] else data['prompt_prefix']
+                prompts = prompts + piv_str
+                if is_link(data['image_url']):
+                    piv_str = f"[Link]({data['image_url']} \'Click to open\')\n" if data is not result[-1] else f"[Link]({data['image_url']} \'Click to open\')"
+                else:
+                    piv_str = "None\n" if data is not result[-1] else "None"
+                images = images + piv_str
+
+            embed.add_field(name="Name", value=names)
+
+            embed.set_author(name="RP Utilities")
+            await interaction.response.send_message(embed=embed)
+
     
-    @_character_default.command(name="image_by_prompt", aliases=["img_by_prompt", "pfp_by_prompt", "profile_by_prompt"])
-    async def _character_default_image_by_prompt(self, ctx, prompt: str | None):
-        if prompt:
-            user = ctx.author.id
+    @_character_default.command(name="image_by_prompt", aliases=["img_by_prompt", "pfp_by_prompt", "profile_by_prompt"], help="character default image by prompt", description="shows your character pfp by their prefix")
+    @app_commands.describe(
+        prompt="your character prefix/prompt"
+    )
+    async def _character_default_image_by_prompt(self, ctx, prompt: str):
+        user = ctx.author.id
 
-            result = await self.client.database.quick_search_default_character(user_id=user, old_prompt_prefix=prompt)
+        result = await self.client.database.quick_search_default_character(user_id=user, old_prompt_prefix=prompt)
 
-            if result is None:
-                await ctx.send(f"you have no characters with prompt {prompt}")
-            else:
-                result = result[0]
-                await ctx.send(result['image_url'])
-        
+        if result is None:
+            await ctx.send(f"you have no characters with prompt {prompt}")
         else:
-            embed = discord.Embed(
-            description= Help(ctx.guild).char_default_image_by_prompt()
-            )
-            await ctx.send(embed)
+            result = result[0]
+            await ctx.send(result['image_url'])
+        
 
-    @_character_default.command(name="set image by prompt", aliases=["img_set_by_prompt", "pfp_set_by_prompt", "profile_set_by_prompt"], with_app_command = False)
+    @_character_default.command(name="set image by prompt", aliases=["img_set_by_prompt", "pfp_set_by_prompt", "profile_set_by_prompt"], with_app_command = False, help="character default image by prompt set")
     async def _character_default_image_by_prompt_set(self, ctx, prompt: str | None, image: str | None):
-        if prompt and image:
-            user = ctx.author.id
+        user = ctx.author.id
 
-            result = await self.client.database.quick_search_default_character(user_id=user, old_prompt_prefix=prompt, new_image=image)
+        result = await self.client.database.quick_search_default_character(user_id=user, old_prompt_prefix=prompt, new_image=image)
 
-            if result is None:
-                await ctx.send(f"you have no characters with prompt {prompt}")
-            else:
-                await ctx.send(f"image set to {image}")
-        
+        if result is None:
+            await ctx.send(f"you have no characters with prompt {prompt}")
         else:
-            embed = await discord.Embed(
-            description= Help(ctx.guild).char_default_image_set_by_prompt()
-            )
-            await ctx.send(embed)
-
-    @_character_default.app_command.command(name = "image_set_by_prompt",)
-    async def _character_default_image_set_by_prompt_slash(self, interaction: discord.Interaction, prompt: str | None, image1: discord.Attachment | None, image2: str | None):
-        if prompt and image1 or prompt and image2:
-            user = interaction.user.id
-            url = image1.url if image1 else image2
-
-            result = await self.client.database.quick_search_default_character(user_id=user, prompt_prefix=prompt, new_image=url)
-
-            if result is None:
-                await interaction.response.send_message(f"you have no characters with prompt {prompt}")
-            else:
-                await interaction.response.send_message(f"image set to {url}")
+            await ctx.send(f"image set to {image}")
         
+
+    @_character_default.app_command.command(name = "image_set_by_prompt", description="change your character pfp by their prefix")
+    @app_commands.describe(
+        prompt="your character prefix/prompt",
+        image1="Your character new pfp, only accepts annexes",
+        image2="Your character new pfp, only accepts URL"
+    )
+    async def _character_default_image_set_by_prompt_slash(self, interaction: discord.Interaction, prompt: str, image1: discord.Attachment | None, image2: str | None):
+        user = interaction.user.id
+        url = image1.url if image1 else image2
+
+        result = await self.client.database.quick_search_default_character(user_id=user, prompt_prefix=prompt, new_image=url)
+
+        if result is None:
+            await interaction.response.send_message(f"you have no characters with prompt {prompt}")
         else:
-            embed = discord.Embed(
-            description= Help(interaction.guild).char_default_image_set_by_prompt()
-            )
-            await interaction.response.send_message(embed)
+            await interaction.response.send_message(f"image set to {url}")
 
             
 async def setup(client):
