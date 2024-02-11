@@ -5,8 +5,6 @@ import re
 
 import random
 
-from help import Help
-
 class SelectionCog(commands.Cog):
     def __init__(self, client):
         self.client = client

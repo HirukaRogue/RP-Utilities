@@ -1,5 +1,25 @@
 {
     "python.analysis.extraPaths": [
-        "./database"
-    ]
+        "./database",
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        },
+    },
+    "files.exclude": {
+        "**/__pycache__": true,
+        ".mypy_cache": true
+    },
+    "ruff.organizeImports": false,
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+          "source": "PowerShell",
+          "icon": "terminal-powershell",
+          "args": ["-ExecutionPolicy", "Bypass"]
+        }
+      },
+      "terminal.integrated.defaultProfile.windows": "PowerShell",
 }

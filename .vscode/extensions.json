@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "zeshuaro.vscode-python-poetry",
+        "charliermarsh.ruff",
+        "matangover.mypy",
+        "ms-python.black-formatter"
+    ]
+}
