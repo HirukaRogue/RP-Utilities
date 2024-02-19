@@ -1,3 +1,4 @@
+from unittest import result
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -142,17 +143,22 @@ class CharactersCog(commands.Cog):
     async def _character_default_create(self, ctx, name: str, prompt: str, image: str | None):
         user = ctx.author.id
 
-        if len(prompt) <= 17 and not prompt.startswith("#") and prompt.endswith(":"):
+        if (
+            len(prompt) <= 17
+            and not (prompt.startswith("->") or prompt.startswith("+>"))
+            and prompt.endswith(":")
+        ):
+            result = await ctx.bot.database.register_default_character(
+                user_id=user, name=name, prompt_prefix=prompt, image=image
+            )
             response = (
                 "Error, the character with this prompt already exist."
-                if await ctx.bot.database.register_default_character(
-                    user_id=user, name=name, prompt_prefix=prompt, image=image
-                )
+                if result is not None
                 else "Character created."
             )
         elif len(prompt) > 17:
             response = "Your prompt cannot have more than 16 characters"
-        elif prompt.startswith("+>"):
+        elif prompt.startswith("+>") or prompt.startswith("->"):
             response = "You cannot start your prompt with +>, since +> is reserved for macros"
         elif not prompt.endswith(":"):
             response = "Your prompt shall ends with :"

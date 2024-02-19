@@ -1,11 +1,16 @@
-import tracemalloc
+from email import message
+from sys import prefix
+import traceback
 import asyncio
 import random
-from sympy import sympify
+from colorama import init
+import lark
+from sympy import content, sympify
 import re
 from lark import Lark, Tree, Transformer
-
-# tracemalloc.start()
+import discord
+from discord.utils import get
+from pagination import Paginator
 
 
 ##################
@@ -119,9 +124,7 @@ def exeroll(args, res_type: str):
         return (
             resp_total
             if res_type == "only_string"
-            else total
-            if res_type == "only_result"
-            else [resp_total, total]
+            else total if res_type == "only_result" else [resp_total, total]
         )
     else:
         return "ERROR!"
@@ -220,10 +223,14 @@ def exeselect(args):
 ##################
 def exeecho(args):
     if len(args) == 1:
-        print("has only 1 string")
+        pages = discord.Embed(description=args)
     else:
-        print("has a set of strings")
-    return args
+        chapters = list()
+        for i in args:
+            embed = discord.Embed(description=i)
+            chapters.append(embed)
+        pages = Paginator(chapters)
+    return pages
 
 
 macro_grammar = Lark(
@@ -261,14 +268,13 @@ macro_grammar = Lark(
     equal: "==" (content | number | command2 | sub_command | listing)
     inlist: "in" (content | number | command2 | sub_command | listing)
 
-    use_var: "&" int
-    sub_command: "+>" string
+    use_var.2: "&" INT
+    sub_command: string
     content.5: string? (key_cont string?)*
     content2.5: args? (key_cont args?)*
     key_cont.5: "{" (use_var | sub_command | command2) "}"
     finput: "[" (("(" content ")" ("," "(" content ")")*) | content) "]"
 
-    int: INT
     string: CHAR_CHAIN+
     args: EXPRESSIONS+
     
@@ -314,10 +320,18 @@ class Compiler(Transformer):
         (cmd,) = cmd
         return cmd
 
+    def execute(self, cmd):
+        return cmd
+
     def math(self, cmd):
         print(cmd)
         m = cmd
-        opt = cmd[1]
+
+        if len(cmd) > 1:
+            opt = cmd[1]
+        else:
+            opt = "all"
+
         while True:
             m = m[0]
             if isinstance(m, str):
@@ -332,7 +346,12 @@ class Compiler(Transformer):
 
     def roll(self, cmd):
         rl = cmd
-        opt = cmd[1]
+
+        if len(cmd) > 1:
+            opt = cmd[1]
+        else:
+            opt = "all"
+
         while True:
             rl = rl[0]
             if isinstance(rl, str):
@@ -529,18 +548,44 @@ class Compiler(Transformer):
         return ["in", index]
 
     def variable(self, cmd):
-        print(cmd)
-        (var,) = cmd
+        var = cmd
+        variables.append(var)
+        print(variables)
         return var
 
     def use_var(self, cmd):
-        print(cmd)
-        (use_var,) = cmd
+        var_pos = int(cmd[0])
+        print(var_pos)
+        print(variables)
+        use_var = variables[var_pos]
         return use_var
 
     def sub_command(self, cmd):
-        (sub_cmd,) = cmd
-        return sub_cmd
+        if not cmd.startswith("+>") and not cmd.startswith("->"):
+            raise BadStartingException()
+
+        scmd = cmd
+        database = macrocache["database"]
+
+        command = database.quick_search_macro(prefix=scmd, id=macrocache["author_id"])
+        if command == "ERROR":
+            command = database.quick_search_macro(prefix=scmd, id=macrocache["guild_id"])
+
+        guild = macrocache["bot"].get_guild(int(macrocache["guild_id"]))
+        member = guild.get_member(int(macrocache["author_id"]))
+
+        if command == "ERROR":
+            raise NonExistantMacro(scmd)
+        else:
+            if (command["type"] == "server" and not member.guild_permissions.administrator) or (
+                scmd.startswith("->") != macrocache["start with ->"]
+                and command["attribute"] == "private"
+                and command["prefix"].startswith("->")
+            ):
+                raise IllegalCommandParse(scmd)
+            else:
+                result = Compiler().transform(macro_grammar.parse(command["cmd"]))
+                return result
 
     def content(self, cmd):
         cnt = cmd
@@ -586,25 +631,68 @@ class Compiler(Transformer):
             return "only_result"
 
 
+#### Variables ####
+variables = list()
+
+
 ##########################
 ###   MACRO EXECUTER   ###
 ##########################
-async def exemac(args):
-    grammar_compilation = macro_grammar.parse(args)
+async def exemac(args, database, guild_id, author_id, bot, starter):
+    macrocache["database"] = database
+    macrocache["guild_id"] = guild_id
+    macrocache["author_id"] = author_id
+    macrocache["bot"] = bot
+    macrocache["start with ->"] = starter
 
-    print(grammar_compilation)
+    try:
+        grammar_compilation = macro_grammar.parse(args)
 
-    cmd = Compiler().transform(grammar_compilation)
+        cmd = Compiler().transform(grammar_compilation)
 
-    return cmd
+        # variables.clear()
+
+        return cmd
+    except lark.LarkError:
+        traceback.print_exc()
+        return ("ERROR",)
 
 
-# asyncio.run(exemac("!math ((52/3)+125)**3,2"))
+#################
+###   CACHE   ###
+#################
+macrocache = dict()
 
-# snapshot = tracemalloc.take_snapshot()
-# top_stats = snapshot.statistics('lineno')
 
-# for stat in top_stats:
-#     print(stat)
+###############################
+###############################
+###############################
 
-# tracemalloc.clear_traces()
+
+##### Macro error Handlers #####
+
+
+### Private Macro Exception ###
+class IllegalCommandParse(Exception):
+    def __init__(self, macro) -> None:
+        self.message = f"""server private macro can only be used on another server private macros or you don't have admin permissions to use the macro, please update the macro to public or protected
+macro prefix: {macro}        
+"""
+
+        super().__init__(self.message)
+
+
+### Non-Existant Macro Exception ###
+class NonExistantMacro(Exception):
+    def __init__(self, macro) -> None:
+        self.message = f"The macro {macro} don't exist"
+
+        super().__init__(self.message)
+
+
+### Bad Starting Macro Exception ###
+class BadStartingException(Exception):
+    def __init__(self) -> None:
+        self.message = "The macro shall start with +> or ->"
+
+        super().__init__(self.message)

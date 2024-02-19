@@ -7,12 +7,12 @@ from discord.ext.commands import Cog, Command
 
 class Help(commands.HelpCommand):
     def __init__(self):
-       attributes = {
-           "name": "help",
-           "cooldown": commands.CooldownMapping.from_cooldown(2, 5.0, commands.BucketType.user),
-           "description": "This is a list of commands for RP Utilities"
+        attributes = {
+            "name": "help",
+            "cooldown": commands.CooldownMapping.from_cooldown(2, 5.0, commands.BucketType.user),
+            "description": "This is a list of commands for RP Utilities",
         }
-       super().__init__(command_attrs = attributes)
+        super().__init__(command_attrs=attributes)
 
     async def send_bot_help(self, mapping):
         embed = discord.Embed(title="Help")
@@ -26,7 +26,6 @@ class Help(commands.HelpCommand):
         channel = self.get_destination()
         await channel.send(embed=embed)
 
-    
     async def send_command_help(self, command):
         description = await self.set_description(command)
         embed = discord.Embed(title=self.get_command_signature(command), description=description)
@@ -37,7 +36,7 @@ class Help(commands.HelpCommand):
 
         channel = self.get_destination()
         await channel.send(embed=embed)
-    
+
     async def set_description(self, command):
         match command.help:
             case "math":
@@ -45,7 +44,10 @@ class Help(commands.HelpCommand):
             case "roll":
                 description = "Roll 1 or more dices of any sides like RPG dices, you can add modifiers, multiply, etc to gather results, (number)df allows you to roll fate dices, (number)dc allows you to flip coins without adding or reducing anything to your roll expression"
             case "select":
-                description = "Select an option you offer by text, for example it selects one random option between apple, pineaple and pear, returning one of those options. with prefix you don't need to surround the options with (), so you can use regular "" to separate the options without having problem of the bot gather options in a way you don't want to. With slash you need to set the options by (), inserting it inside the parentesis"
+                description = (
+                    "Select an option you offer by text, for example it selects one random option between apple, pineaple and pear, returning one of those options. with prefix you don't need to surround the options with (), so you can use regular "
+                    " to separate the options without having problem of the bot gather options in a way you don't want to. With slash you need to set the options by (), inserting it inside the parentesis"
+                )
             case "character":
                 description = "Section of commands related to character creation, in this beta version you can only set default characters"
             case "character search":
@@ -70,6 +72,20 @@ class Help(commands.HelpCommand):
                 description = "Shows the profile picture of your character by their prefix/prompt"
             case "character default image by prompt set":
                 description = "Change/set the profile picture of your character by their prompt"
+            case "macro":
+                description = "With macros you can make shortcut to execute commands from the bot without needing to execute it manulally"
+            case "macro search":
+                description = "Allows you to search your macros like google, leave search in blank to get a list of commands"
+            case "macro create":
+                description = "Allows you to create your own macros"
+            case "macro delete":
+                description = "Allows you to delete a macro using their prefix"
+            case "macro edit attribute":
+                description = "Allows you to edit the attribute of your server macro, from from private to public, public to protected, protected to public, and so on"
+            case "macro edit code":
+                description = "Allows you to edit the code of your macro"
+            case "macro edit prefix":
+                description = "Allows you to edit your macro prefix"
 
         return description
 

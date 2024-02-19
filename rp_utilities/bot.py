@@ -76,4 +76,6 @@ bot = Bot()
 
 
 def run_bot():
-    bot.run(bot_token.return_token(), log_handler=handler, log_level=logging.DEBUG)
+    bot.run(
+        bot_token.return_token(), log_handler=handler, log_level=logging.DEBUG, root_logger=True
+    )
