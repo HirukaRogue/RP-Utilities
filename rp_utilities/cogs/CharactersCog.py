@@ -86,6 +86,7 @@ class CharactersCog(commands.Cog):
             page = list()
 
             for num, i in enumerate(search_result):
+                print(i)
                 keys = list(i.keys())
                 data = {keys[0]: i["name"], keys[1]: i["prompt_prefix"], keys[2]: i["image_url"]}
 

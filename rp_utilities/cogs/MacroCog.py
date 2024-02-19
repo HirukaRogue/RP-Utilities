@@ -51,7 +51,7 @@ class MacroCog(commands.Cog):
                     embed = discord.Embed(description=i)
                     await message.channel.send(embed=embed)
 
-    @commands.hybrid_group(name="macro", fallback="help")
+    @commands.hybrid_group(name="macro", fallback="help", help="macro")
     async def _macro(self, ctx):
         await ctx.send(
             "With macros you can make shortcut to execute commands from the bot without needing to execute it manulally"

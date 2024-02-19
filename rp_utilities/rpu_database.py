@@ -150,7 +150,7 @@ class Database:
                     if name in i["name"]:
                         documents.append(i)
             else:
-                for i in char_list:
+                for i in char_list.values():
                     documents.append(i)
 
         return documents if len(documents) > 0 else None
@@ -167,15 +167,16 @@ class Database:
             database = await self.db["characters"].find_one({"user_id": user_id})
 
         char_list = database["characters"]
+
         if prompt_prefix not in char_list:
+            char_list = char_list | data
+
+            await self.db["characters"].update_one(
+                {"user_id": user_id}, {"$set": {"characters": char_list}}
+            )
+            return None
+        else:
             return "ERROR"
-
-        char_list = char_list | data
-
-        await self.db["characters"].update_one(
-            {"user_id": user_id}, {"$set": {"characters": char_list}}
-        )
-        return None
 
     # this function will delete a character by name or prompt_prefix
     async def delete_default_character(
@@ -226,6 +227,7 @@ class Database:
             if old_prompt_prefix in char_list:
                 if new_name:
                     char_list[old_prompt_prefix]["name"] = new_name
+                    return "SUCESS"
                 elif new_prompt_prefix:
                     new_data = {
                         new_prompt_prefix: {
@@ -236,8 +238,10 @@ class Database:
                     }
                     del char_list[old_prompt_prefix]
                     char_list.update(new_data)
+                    return "SUCESS"
                 elif new_image:
                     char_list[old_prompt_prefix]["image_url"] = new_image
+                    return "SUCESS"
             elif old_name:
                 char_sub_list = list()
                 for i in char_list.values():
@@ -250,6 +254,7 @@ class Database:
                 else:
                     if new_name:
                         char_list[char_sub_list[0]["prompt_prefix"]]["name"] = new_name
+                        return "SUCESS"
                     elif new_prompt_prefix:
                         new_data = {
                             new_prompt_prefix: {
@@ -262,8 +267,10 @@ class Database:
                         }
                         del char_list[old_prompt_prefix]
                         char_list.update(new_data)
+                        return "SUCESS"
                     elif new_image:
                         char_list[char_sub_list[0]["prompt_prefix"]]["image_url"] = new_image
+                        return "SUCESS"
         else:
             return "ERROR"
 
@@ -271,7 +278,7 @@ class Database:
     # Macros are complicated, but yet useful for manage stuffs easier in RPGs and RPs
 
     # This function will search macros from the user and the server they are within
-    async def search_macro(self, *, search: str | None = None, id: int):
+    async def search_macro(self, *, search: str | None = None, id: int) -> None | list:
         database = await self.db["macros"].find_one({"id": id})
 
         if not database:
@@ -289,7 +296,7 @@ class Database:
             if search in i["prefix"]:
                 results.append(i)
 
-        return results or None
+        return results if len(results) > 0 else None
 
     # This is a quicker version of search macro
     async def quick_search_macro(self, *, prefix: str, id: int):
