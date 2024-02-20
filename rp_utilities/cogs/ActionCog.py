@@ -38,9 +38,11 @@ class ActionCog(commands.Cog):
         anonimity = await ctx.bot.database.switch_anonimous_mode(ctx.author.id)
 
         if anonimity:
-            await ctx.send("You are now in Anonymous Mode")
+            embed = discord.Embed(description="You are now in Anonymous Mode")
         else:
-            await ctx.send("You are not in Anonymous Mode now")
+            embed = discord.Embed(description="You are not in Anonymous Mode now")
+
+        await ctx.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):
