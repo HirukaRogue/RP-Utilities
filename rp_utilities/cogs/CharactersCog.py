@@ -1,3 +1,5 @@
+from email.mime import image
+from sys import prefix
 from unittest import result
 import discord
 from discord import app_commands
@@ -152,19 +154,35 @@ class CharactersCog(commands.Cog):
             result = await ctx.bot.database.register_default_character(
                 user_id=user, name=name, prompt_prefix=prompt, image=image
             )
-            response = (
-                "Error, the character with this prompt already exist."
-                if result is not None
-                else "Character created."
-            )
+            if result is not None:
+                embed = discord.Embed(
+                    title="Character creation failure ❌",
+                    description="A character with this prompt already exist.",
+                )
+            else:
+                embed = discord.Embed(title="Character creation sucess :white_check_mark:")
         elif len(prompt) > 17:
-            response = "Your prompt cannot have more than 16 characters"
+            embed = discord.Embed(
+                title="Character creation failure ❌",
+                description="Your prompt cannot have more than 16 characters",
+            )
         elif prompt.startswith("+>") or prompt.startswith("->"):
-            response = "You cannot start your prompt with +>, since +> is reserved for macros"
+            embed = discord.Embed(
+                title="Character creation failure ❌",
+                description="You cannot start your prompt with +> or ->, since +> and -> is reserved for macros",
+            )
         elif not prompt.endswith(":"):
-            response = "Your prompt shall ends with :"
+            embed = discord.Embed(
+                title="Character creation failure ❌",
+                description="Your prompt shall ends with :",
+            )
+        else:
+            embed = discord.Embed(
+                title="Character creation failure ❌",
+                description="Something went wrong",
+            )
 
-        await ctx.send(response)
+        await ctx.send(embed=embed)
 
     # Slash version
     @_character_default.app_command.command(name="create", description="create a default character")
@@ -185,22 +203,47 @@ class CharactersCog(commands.Cog):
         user = interaction.user.id
         url = image_1.url if image_1 else image_2
 
-        if len(prompt) <= 18 and not prompt.startswith("##") and prompt.endswith(":"):
-            response = (
-                "Error, the character with this prompt already exist."
-                if await self.client.database.register_default_character(
-                    user_id=user, name=name, prompt_prefix=prompt, image=url
-                )
-                else "Character created."
-            )
-        elif len(prompt) > 18:
-            response = "Your prompt cannot have more than 16 characters"
-        elif prompt.startswith("##"):
-            response = "You cannot start your prompt with #, since # is reserved for macros"
-        elif not prompt.endswith(":"):
-            response = "Your prompt shall ends with :"
+        if (
+            len(prompt) <= 18
+            and not (prompt.startswith("+>") or prompt.startswith("->"))
+            and prompt.endswith(":")
+        ):
 
-        await interaction.response.send_message(response)
+            response = await self.client.database.register_default_character(
+                user_id=user, name=name, prompt_prefix=prompt, image=url
+            )
+            if response is not None:
+                embed = discord.Embed(
+                    title="Character creation failure ❌",
+                    description="A character with this prompt already exist.",
+                )
+            else:
+                embed = discord.Embed(
+                    title="Character creation sucess :white_check_mark:",
+                )
+
+        elif len(prompt) > 18:
+            embed = discord.Embed(
+                title="Character creation failure ❌",
+                description="Your prompt cannot have more than 16 characters",
+            )
+        elif prompt.startswith("->") or prompt.startswith("+>"):
+            embed = discord.Embed(
+                title="Character creation failure ❌",
+                description="You cannot start your prompt with #, since # is reserved for macros",
+            )
+        elif not prompt.endswith(":"):
+            embed = discord.Embed(
+                title="Character creation failure ❌",
+                description="Your prompt shall ends with :",
+            )
+        else:
+            embed = discord.Embed(
+                title="Character creation failure ❌",
+                description="Something went wrong",
+            )
+
+        await interaction.response.send_message(embed=embed)
 
     @_character_default.command(
         name="edit_name",
@@ -218,9 +261,14 @@ class CharactersCog(commands.Cog):
         )
 
         if result == "ERROR":
-            ctx.send("Character name not found")
+            embed = discord.Embed(
+                title="Character edition failure ❌",
+                description=f"There is no character with name {old_name}",
+            )
         elif result == "SUCESS":
-            ctx.send(f"Character name edited from {old_name} to {new_name}")
+            embed = discord.Embed(
+                title="Character edition sucess :white_check_mark:",
+            )
         else:
             embed = discord.Embed(
                 title="There is more than 1 result for what you want to edit",
@@ -235,7 +283,8 @@ class CharactersCog(commands.Cog):
             embed.add_field(name="Name", value=names)
 
             embed.set_author(name="RP Utilities")
-            await ctx.send(embed=embed)
+
+        await ctx.send(embed=embed)
 
     @_character_default.command(
         name="edit_name_by_prompt",
@@ -253,9 +302,21 @@ class CharactersCog(commands.Cog):
         )
 
         if result == "ERROR":
-            await ctx.send("Character name not found")
+            embed = discord.Embed(
+                title="Character edition failure ❌",
+                description=f"There is no character with prefix {prefix}",
+            )
         elif result == "SUCESS":
-            await ctx.send(f"Character name edited of prompt {prompt} to {new_name}")
+            embed = discord.Embed(
+                title="Character edition sucess :white_check_mark:",
+            )
+        else:
+            embed = discord.Embed(
+                title="Character edition failure ❌",
+                description="Something went wrong",
+            )
+
+        await ctx.send(embed=embed)
 
     @_character_default.command(
         name="edit_prompt",
@@ -273,9 +334,21 @@ class CharactersCog(commands.Cog):
         )
 
         if result == "ERROR":
-            await ctx.send("Character name not found")
+            embed = discord.Embed(
+                title="Character edition failure ❌",
+                description=f"There is no character with prefix {old_prompt}",
+            )
         elif result == "SUCESS":
-            await ctx.send(f"Character prompt edited from {old_prompt} to {new_prompt}")
+            embed = discord.Embed(
+                title="Character edition sucess :white_check_mark:",
+            )
+        else:
+            embed = discord.Embed(
+                title="Character edition failure ❌",
+                description="Something went wrong",
+            )
+
+        await ctx.send(embed=embed)
 
     @_character_default.command(
         name="delete",
@@ -283,8 +356,8 @@ class CharactersCog(commands.Cog):
         help="character default delete",
         description="delete a character",
     )
-    @app_commands.describe(deleting_prompt="your character name or prompt to be deleted")
-    async def _character_default_delete(self, ctx, deleting_prompt: str | None):
+    @app_commands.describe(deleting_prompt="your character name or prefix to be deleted")
+    async def _character_default_delete(self, ctx, deleting_prompt: str):
         user = ctx.author.id
 
         result = await ctx.bot.database.delete_default_character(
@@ -301,9 +374,14 @@ class CharactersCog(commands.Cog):
             result = unify(result, sub_result)
 
         if result == "ERROR":
-            await ctx.send("Character not found.")
+            embed = discord.Embed(
+                title="Character deletion failure ❌",
+                description=f"There is no character from your deleting input {deleting_prompt}",
+            )
         elif result == "SUCESS":
-            await ctx.send("Character deleted.")
+            embed = discord.Embed(
+                title="Character deletion sucess :white_check_mark:",
+            )
         else:
             names = ""
             prompts = ""
@@ -326,7 +404,7 @@ class CharactersCog(commands.Cog):
             embed.add_field(name="Prompt", value=prompts)
 
             embed.set_author(name="RP Utilities")
-            await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
     @_character_default.command(
         name="image",
@@ -338,13 +416,21 @@ class CharactersCog(commands.Cog):
     async def _character_default_image(self, ctx, name: str):
         user = ctx.author.id
 
-        result = await ctx.bot.database.quick_search_default_character(user_id=user, name=name)
+        result = await ctx.bot.database.search_default_character(user_id=user, name=name)
 
         if result is None:
-            await ctx.send(f"you have no characters with name {name}")
+            embed = discord.Embed(
+                title="Character profile picture show failure ❌",
+                description=f"you have no characters with name {name}",
+            )
         elif len(result) == 1:
             result = result[0]
-            await ctx.send(result["image_url"])
+            embed = discord.Embed(
+                title=f"Profile picture of {name}",
+                description="There is no profile picture" if not result["image_url"] else None,
+            )
+            if result["image_url"]:
+                embed.set_image(url=result["image_url"])
         else:
             embed = discord.Embed(
                 title="There is more than 1 result for what you want to show image",
@@ -376,7 +462,8 @@ class CharactersCog(commands.Cog):
             embed.add_field(name="Name", value=names)
 
             embed.set_author(name="RP Utilities")
-            await ctx.send(embed=embed)
+
+        await ctx.send(embed=embed)
 
     @_character_default.command(
         name="set image",
@@ -392,9 +479,14 @@ class CharactersCog(commands.Cog):
         )
 
         if result is None:
-            await ctx.send(f"you have no characters with name {name}")
+            embed = discord.Embed(
+                title="Character profile picture change failure ❌",
+                description=f"you have no characters with name {name}",
+            )
         elif result == "SUCESS":
-            await ctx.send(f"image set to {image}")
+            embed = discord.Embed(
+                title="Character profile picture change sucess :white_check_mark:",
+            )
         else:
             embed = discord.Embed(
                 title="There is more than 1 result for what you want to set image",
@@ -426,7 +518,8 @@ class CharactersCog(commands.Cog):
             embed.add_field(name="Name", value=names)
 
             embed.set_author(name="RP Utilities")
-            await ctx.send(embed=embed)
+
+        await ctx.send(embed=embed)
 
     @_character_default.app_command.command(
         name="image_set", description="change your character pfp by their name"
@@ -451,9 +544,14 @@ class CharactersCog(commands.Cog):
         )
 
         if result is None:
-            await interaction.response.send_message(f"you have no characters with name {name}")
+            embed = discord.Embed(
+                title="Character profile picture change failure ❌",
+                description=f"you have no characters with name {name}",
+            )
         elif result == "SUCESS":
-            await interaction.response.send_message(f"image set to {url}")
+            embed = discord.Embed(
+                title="Character profile picture change sucess :white_check_mark:",
+            )
         else:
             embed = discord.Embed(
                 title="There is more than 1 result for what you want to set image",
@@ -485,7 +583,8 @@ class CharactersCog(commands.Cog):
             embed.add_field(name="Name", value=names)
 
             embed.set_author(name="RP Utilities")
-            await interaction.response.send_message(embed=embed)
+
+        await interaction.response.send_message(embed=embed)
 
     @_character_default.command(
         name="image_by_prompt",
@@ -502,10 +601,20 @@ class CharactersCog(commands.Cog):
         )
 
         if result is None:
-            await ctx.send(f"you have no characters with prompt {prompt}")
+            embed = discord.Embed(
+                title="Character profile picture show failure ❌",
+                description=f"you have no characters with prefix {prompt}",
+            )
         else:
             result = result[0]
-            await ctx.send(result["image_url"])
+            embed = discord.Embed(
+                title=f"Profile picture of {result['name']}",
+                description="There is no profile picture" if not result["image_url"] else None,
+            )
+            if result["image_url"]:
+                embed.set_image(url=result["image_url"])
+
+        await ctx.send(embed=embed)
 
     @_character_default.command(
         name="set image by prompt",
@@ -523,9 +632,16 @@ class CharactersCog(commands.Cog):
         )
 
         if result is None:
-            await ctx.send(f"you have no characters with prompt {prompt}")
+            embed = discord.Embed(
+                title="Character profile picture change failure ❌",
+                description=f"you have no characters with prefix {prompt}",
+            )
         else:
-            await ctx.send(f"image set to {image}")
+            embed = discord.Embed(
+                title="Character profile picture change sucess :white_check_mark:",
+            )
+
+        await ctx.send(embed=embed)
 
     @_character_default.app_command.command(
         name="image_set_by_prompt", description="change your character pfp by their prefix"
@@ -550,9 +666,16 @@ class CharactersCog(commands.Cog):
         )
 
         if result is None:
-            await interaction.response.send_message(f"you have no characters with prompt {prompt}")
+            embed = discord.Embed(
+                title="Character profile picture change failure ❌",
+                description=f"you have no characters with prefix {prompt}",
+            )
         else:
-            await interaction.response.send_message(f"image set to {url}")
+            embed = discord.Embed(
+                title="Character profile picture change sucess :white_check_mark:",
+            )
+
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(client):

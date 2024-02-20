@@ -53,9 +53,10 @@ class MacroCog(commands.Cog):
 
     @commands.hybrid_group(name="macro", fallback="help", help="macro")
     async def _macro(self, ctx):
-        await ctx.send(
-            "With macros you can make shortcut to execute commands from the bot without needing to execute it manulally"
+        embed = discord.Embed(
+            description="With macros you can make shortcut to execute commands from the bot without needing to execute it manulally"
         )
+        await ctx.send(embed=embed)
 
     @_macro.command(
         name="search",
@@ -150,21 +151,34 @@ class MacroCog(commands.Cog):
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             await ctx.send("Your macro prefix shall start with +> or ->")
         elif macro_attr not in ("public", "private", "protected"):
-            await ctx.send(
-                "Your macro attribute need to be or 'private' or 'public' or 'protected'"
+            embed = discord.Embed(
+                title="Macro creation failure ❌",
+                description="Your macro attribute need to be or 'private' or 'public' or 'protected'",
             )
         elif (
             prefix.startswith("->")
             and ctx.guild is not None
             and not ctx.author.guild_permissions.administrator
         ):
-            await ctx.send("You don't have admin permissions to set a server macro with ->")
+            embed = discord.Embed(
+                title="Macro creation failure ❌",
+                description="You don't have admin permissions to set a server macro with ->",
+            )
         elif macro_attr in ("public", "protected") and prefix.startswith("+>"):
-            await ctx.send("user side macro with +> cannot be set to 'public' or 'protected'")
+            embed = discord.Embed(
+                title="Macro creation failure ❌",
+                description="user side macro with +> cannot be set to 'public' or 'protected",
+            )
         elif ctx.guild is None and prefix.startswith("->"):
-            await ctx.send("You must be in a server to create a server macro with ->")
+            embed = discord.Embed(
+                title="Macro creation failure ❌",
+                description="You must be in a server to create a server macro with ->",
+            )
         elif ctx.author is None:
-            await ctx.send("Something went wrong, someone is trying to hack the bot")
+            embed = discord.Embed(
+                title="Macro creation failure ❌",
+                description="Something went wrong, someone is trying to hack the bot",
+            )
         else:
             executioner = await macros.exemac(
                 args,
@@ -175,7 +189,7 @@ class MacroCog(commands.Cog):
                 prefix.startswith("->"),
             )
             if isinstance(executioner, tuple):
-                embed = discord.Embed(title="Macro creation failure", description=executioner[0])
+                embed = discord.Embed(title="Macro creation failure ❌", description=executioner[0])
             else:
                 stored = await ctx.bot.database.register_macro(
                     prefix=prefix,
@@ -190,17 +204,17 @@ class MacroCog(commands.Cog):
                 )
                 if stored == "ERROR":
                     embed = discord.Embed(
-                        title="Macro creation failure",
+                        title="Macro creation failure ❌",
                         description="A macro with that prefix already exists, try with another prefix",
                     )
                 elif stored == "SUCESS":
-                    embed = discord.Embed(title="Macro creation sucess")
+                    embed = discord.Embed(title="Macro creation sucess :white_check_mark:")
                 else:
                     embed = discord.Embed(
-                        title="Macro creation failure", description="Something went wrong"
+                        title="Macro creation failure ❌", description="Something went wrong"
                     )
 
-            await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
     @_macro.command(
         name="edit_prefix",
@@ -218,13 +232,13 @@ class MacroCog(commands.Cog):
             or not new_prefix.startswith("->")
         ):
             embed = discord.Embed(
-                title="Macro edition failure", description="All macros starts with +> or with ->"
+                title="Macro edition failure ❌", description="All macros starts with +> or with ->"
             )
         elif old_prefix.startswith("+>") != new_prefix.startswith("+>") and old_prefix.startswith(
             "->"
         ) != new_prefix.startswith("->"):
             embed = discord.Embed(
-                title="Macro edition failure",
+                title="Macro edition failure ❌",
                 description="You cannot change a user macro to server macro or a server macro to user macro",
             )
         else:
@@ -237,15 +251,15 @@ class MacroCog(commands.Cog):
                 )
 
             if result == "SUCESS":
-                embed = discord.Embed(title="Macro edition sucess")
+                embed = discord.Embed(title="Macro edition sucess :white_check_mark:")
             elif result == "ERROR 1":
                 embed = discord.Embed(
-                    title="Macro edition failure",
+                    title="Macro edition failure ❌",
                     description=f"There is no macro named '{old_prefix}'",
                 )
             else:
                 embed = discord.Embed(
-                    title="Macro edition failure", description="Something went wrong"
+                    title="Macro edition failure ❌", description="Something went wrong"
                 )
 
         await ctx.send(embed=embed)
@@ -271,7 +285,7 @@ class MacroCog(commands.Cog):
                 prefix.startswith("->"),
             )
             if isinstance(executioner, tuple):
-                embed = discord.Embed(title="Macro edition failure", description=executioner[0])
+                embed = discord.Embed(title="Macro edition failure ❌", description=executioner[0])
             else:
                 result = await ctx.bot.database.update_macro(
                     old_prefix=prefix, args=args, id=ctx.author.id
@@ -282,7 +296,7 @@ class MacroCog(commands.Cog):
                     )
 
                 if result == "SUCESS":
-                    embed = discord.Embed(title="Macro edition sucess")
+                    embed = discord.Embed(title="Macro edition sucess :white_check_mark:")
                 elif result == "ERROR 1":
                     embed = discord.Embed(
                         title="Macro edition failure",
@@ -290,7 +304,7 @@ class MacroCog(commands.Cog):
                     )
                 else:
                     embed = discord.Embed(
-                        title="Macro edition failure", description="Something went wrong"
+                        title="Macro edition failure ❌", description="Something went wrong"
                     )
 
         await ctx.send(embed=embed)
@@ -307,11 +321,12 @@ class MacroCog(commands.Cog):
     async def _macro_edit_attribute(self, ctx, prefix: str, attr: str):
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             embed = discord.Embed(
-                title="Macro edition failure", description="All macros shall starts with +> or ->"
+                title="Macro edition failure ❌",
+                description="All macros shall starts with +> or ->",
             )
         elif prefix.startswith("+>"):
             embed = discord.Embed(
-                title="Macro edition failure",
+                title="Macro edition failure ❌",
                 description="User macros cannot have their attribute be changed",
             )
         elif attr not in ("public", "private", "protected"):
@@ -323,20 +338,20 @@ class MacroCog(commands.Cog):
                 old_prefix=prefix, macro_attr=attr, id=ctx.guild.id
             )
             if result == "SUCESS":
-                embed = discord.Embed(title="Macro edition sucess")
+                embed = discord.Embed(title="Macro edition sucess :white_check_mark:")
             elif result == "ERROR 1":
                 embed = discord.Embed(
-                    title="Macro edition failure",
+                    title="Macro edition failure ❌",
                     description=f"There is no macro named '{prefix}'",
                 )
             elif result == "ERROR 3":
                 embed = discord.Embed(
-                    title="Macro edition failure",
+                    title="Macro edition failure ❌",
                     description="The macro is not a server macro to edit attribute",
                 )
             else:
                 embed = discord.Embed(
-                    title="Macro edition failure", description="Something went wrong"
+                    title="Macro edition failure ❌", description="Something went wrong"
                 )
         await ctx.send(embed=embed)
 
@@ -356,20 +371,20 @@ class MacroCog(commands.Cog):
 
             if result == "ERROR":
                 embed = discord.Embed(
-                    title="Macro deletion failure",
+                    title="Macro deletion failure ❌",
                     description="There is no macro with such name in the server or in your user",
                 )
 
                 await ctx.send(embed=embed)
 
             elif result == "SUCESS":
-                embed = discord.Embed(title="Macro deletion sucess")
+                embed = discord.Embed(title="Macro deletion sucess :white_check_mark:")
 
                 await ctx.send(embed=embed)
 
             else:
                 embed = discord.Embed(
-                    title="Macro deletion failure", description="Something went wrong"
+                    title="Macro deletion failure ❌", description="Something went wrong"
                 )
 
                 await ctx.send(embed=embed)

@@ -187,14 +187,22 @@ class Database:
         if database:
             char_list = database["characters"]
 
-            if not (name in char_list.values() or prompt_prefix in char_list.values):
+            char_sub_list = list()
+            for i in char_list.values():
+                if name and prompt_prefix:
+                    if name in i["name"] or prompt_prefix in i["prompt_prefix"]:
+                        char_sub_list.append(i)
+                elif name:
+                    if name in i["name"]:
+                        char_sub_list.append(i)
+                elif prompt_prefix:
+                    if prompt_prefix in i["prompt_prefix"]:
+                        char_sub_list.append(i)
+
+            if len(char_sub_list) == 0:
                 return "ERROR"
             else:
-                char_sub_list = list()
-                for i in char_list.values():
-                    if name in i or prompt_prefix in i:
-                        char_sub_list.append(i)
-                if char_sub_list == 1:
+                if len(char_sub_list) == 1:
                     if name:
                         del char_list[char_sub_list[0]["prompt_prefix"]]
                     elif prompt_prefix:
