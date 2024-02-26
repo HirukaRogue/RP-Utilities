@@ -301,10 +301,7 @@ macro_grammar = Lark(
 
 class Compiler(Transformer):
     def chain_command(self, macro):
-        chain_cmd = list()
-        for i in macro:
-            if i != " ":
-                chain_cmd.append(i)
+        chain_cmd = list(macro)
         return chain_cmd
 
     def command4(self, cmd):
