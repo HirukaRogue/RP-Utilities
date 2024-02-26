@@ -25,15 +25,14 @@ class ActionCog(commands.Cog):
         aliases=[
             "annonymode",
         ],
+        description="Annonymous mode toggle to show or hide your nick on character actions",
     )
     async def _annonymous_mode(self, ctx):
         await ctx.send(
             "Anonymous mode makes your tupper messages being anonymous, type the command with switch to switch your anonymous mode"
         )
 
-    @_annonymous_mode.command(
-        name="switch",
-    )
+    @_annonymous_mode.command(name="switch", description="Switch your annonymous mode to on or off")
     async def _annonymous_mode_switch(self, ctx):
         anonimity = await ctx.bot.database.switch_anonimous_mode(ctx.author.id)
 
