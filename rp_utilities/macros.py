@@ -282,7 +282,7 @@ macro_grammar = Lark(
     CHAR_EXP: "0".."9"
                 | "d" | "D" | "f" | "F" | "c" | "C" 
                 | "+" | "-" | "*" | "/" | "."
-                | "(" | ")" 
+                | "(" | ")" | "#"
     CHAR_CHAIN: CHAR+
     CHAR: "0".."9" | "a".."z" | "A".."Z" | SYMBOLS
     SYMBOLS: "!" | "#" | "$" | "%" | "&" | "\\" | "*" | "+" | "," | "-" | "." | "/" | ":" | ";" 
@@ -301,7 +301,10 @@ macro_grammar = Lark(
 
 class Compiler(Transformer):
     def chain_command(self, macro):
-        (chain_cmd,) = macro
+        chain_cmd = list()
+        for i in macro:
+            if i != " ":
+                chain_cmd.append(i)
         return chain_cmd
 
     def command4(self, cmd):
@@ -629,6 +632,9 @@ class Compiler(Transformer):
             return "only_string"
         elif num == 2:
             return "only_result"
+
+    def ws(self, cmd):
+        return None
 
 
 #### Variables ####

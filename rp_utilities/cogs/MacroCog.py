@@ -2,6 +2,7 @@ from pydoc import describe
 import discord
 from discord.ext import commands
 from discord import app_commands
+from sympy import true
 
 import macros
 from copy import deepcopy
@@ -16,7 +17,7 @@ class MacroCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Ping.py is ready")
+        print("MacroCog.py is ready")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -44,10 +45,17 @@ class MacroCog(commands.Cog):
                 elif isinstance(i, Paginator):
                     ctx = await self.client.get_context(message)
                     await i.start(ctx)
-                elif len(i) > 1 and isinstance(i, list):
-                    embed = discord.Embed(description=i[0])
+                elif isinstance(i, list):
+                    y = i
+                    while true:
+                        if isinstance(y, list) and len(y) > 1:
+                            y = i[0][0]
+                        if isinstance(y, str) or isinstance(y, float):
+                            break
+                        y = i[0]
+                    embed = discord.Embed(description=y)
                     await message.channel.send(embed=embed)
-                else:
+                elif i is not None:
                     embed = discord.Embed(description=i)
                     await message.channel.send(embed=embed)
 
@@ -97,7 +105,6 @@ class MacroCog(commands.Cog):
                 data = {keys[0]: i["prefix"], keys[2]: i["type"], keys[3]: i["attribute"]}
 
                 page.append(data)
-                print(f"{page}")
 
                 if num >= len(search_result) - 1 or (num + 1) % display == 0:
                     page_count = page_count + 1
@@ -225,11 +232,8 @@ class MacroCog(commands.Cog):
         old_prefix="Your macro actual prefix", new_prefix="Your macro new prefix"
     )
     async def _macro_edit_prefix(self, ctx, old_prefix: str, new_prefix: str):
-        if (
-            not old_prefix.startswith("+>")
-            or not new_prefix.startswith("+>")
-            and not old_prefix.startswith("->")
-            or not new_prefix.startswith("->")
+        if (not old_prefix.startswith("+>") or not new_prefix.startswith("+>")) and (
+            not old_prefix.startswith("->") or not new_prefix.startswith("->")
         ):
             embed = discord.Embed(
                 title="Macro edition failure ❌", description="All macros starts with +> or with ->"

@@ -227,7 +227,7 @@ class Database:
         new_prompt_prefix: str | None = None,
         new_image: str | None = None,
     ) -> None | str | list:
-        database = self.db["characters"].find_one({"user_id": user_id})
+        database = await self.db["characters"].find_one({"user_id": user_id})
 
         if database:
             char_list = database["characters"]
@@ -253,8 +253,10 @@ class Database:
             elif old_name:
                 char_sub_list = list()
                 for i in char_list.values():
-                    if old_name in i:
-                        char_sub_list.append(i)
+                    if "name" in i:
+                        if old_name in i["name"]:
+                            char_sub_list.append(i)
+
                 if len(char_sub_list) == 0:
                     return "ERROR"
                 elif len(char_sub_list) > 1:
@@ -262,6 +264,9 @@ class Database:
                 else:
                     if new_name:
                         char_list[char_sub_list[0]["prompt_prefix"]]["name"] = new_name
+                        await self.db["characters"].update_one(
+                            {"user_id": user_id}, {"$set": {"characters": char_list}}
+                        )
                         return "SUCESS"
                     elif new_prompt_prefix:
                         new_data = {
@@ -275,9 +280,15 @@ class Database:
                         }
                         del char_list[old_prompt_prefix]
                         char_list.update(new_data)
+                        await self.db["characters"].update_one(
+                            {"user_id": user_id}, {"$set": {"characters": char_list}}
+                        )
                         return "SUCESS"
                     elif new_image:
                         char_list[char_sub_list[0]["prompt_prefix"]]["image_url"] = new_image
+                        await self.db["characters"].update_one(
+                            {"user_id": user_id}, {"$set": {"characters": char_list}}
+                        )
                         return "SUCESS"
         else:
             return "ERROR"
