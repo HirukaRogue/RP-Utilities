@@ -1,9 +1,5 @@
-from email import message
-from sys import prefix
 import traceback
 import asyncio
-import random
-from colorama import init
 import lark
 from sympy import content, sympify
 import re

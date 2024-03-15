@@ -1,6 +1,5 @@
 import bot_token
 import discord
-from discord import app_commands
 import asyncio
 from discord.ext import commands
 import os
@@ -31,7 +30,7 @@ class Bot(commands.Bot):
         print("Bot Connected!")
 
     async def setup_hook(self) -> None:
-        await self.database.connect("mongodb://localhost:27017")
+        await self.database.connect()
         for extension in EXTENSIONS:
             await self.load_extension(extension)
         await self.add_cog(PrefixCog(self))
@@ -40,9 +39,9 @@ class Bot(commands.Bot):
                 await self.load_extension(f"cogs.{filename[:-3]}")
         await self.tree.sync()
 
-    # async def close(self) -> None:
-    #     await super().close()
-    #     await self.database.close()
+    async def close(self) -> None:
+        await super().close()
+        await self.database.close()
 
 
 async def prefix_setup(bot, message) -> str:
