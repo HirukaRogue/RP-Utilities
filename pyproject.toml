@@ -12,10 +12,10 @@ python = "^3.11"
 "discord-ext-menus" = {git = "https://github.com/Rapptz/discord-ext-menus"}
 python-dotenv = "^1.0.0"
 sympy = "^1.12"
+motor = "^3.3.2"
 jishaku = "^2.5.2"
 pyright = "^1.1.347"
 lark = "^1.1.9"
-aiosqlite = "^0.20.0"
 
 
 [tool.poetry.group.dev.dependencies]

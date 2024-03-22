@@ -44,62 +44,44 @@ CREATE TABLE IF NOT EXISTS macros (
 
 
 class Database:
-    async def connect(self):
-        self.db = await aiosqlite.connect("rpu.db")
+    def __init__(self) -> None:
+        self.dev_client: motor.motor_asyncio.AsyncIOMotorClient | None = None
 
-        await self.db.execute(PREFIX_TABLE)
-        await self.db.execute(ANONIMITY_TABLE)
-        await self.db.execute(WEBHOOK_LOG_TABLE)
-        await self.db.execute(DEFAULT_CHARACTER_TABLE)
-        await self.db.execute(MACRO_TABLE)
-        await self.db.commit()
+    async def connect(self, connection_uri: str, /) -> None:
+        self.dev_client = motor.motor_asyncio.AsyncIOMotorClient(connection_uri)
+        if self.dev_client is not None:
+            self.db = self.dev_client["rpu_database"]
+            print("Database connected!")
+        else:
+            self.db = None
+            print("Cannot connect to Database!")
 
-        print("Database connected!")
-
-    async def close(self):
-        await self.db.close()
+    async def close(self) -> None:
+        self.dev_client.close()
 
     ### PREFIXES ###
     # this section is for prefixes
 
     # this function will create a new prefix for a guild
     async def set_prefix(self, *, guild_id: int, prefix: str) -> None:
-        cursor = await self.db.execute("SELECT * FROM prefixes WHERE guild_id = ?", (guild_id,))
-
-        result = await cursor.fetchone()
-
-        if result is None:
-            await self.db.execute(
-                "INSERT INTO prefixes (guild_id, prefix) VALUES (?, ?)", (guild_id, prefix)
-            )
-            await self.db.commit()
-
+        if await self.db["prefixes"].find_one({"guild_id": guild_id}) is None:
+            await self.db["prefixes"].insert_one({"guild_id": guild_id, "prefix": prefix})
         else:
-            await self.db.execute(
-                "UPDATE prefixes SET prefix = ? WHERE guild_id = ?", (prefix, guild_id)
-            )
-            await self.db.commit()
+            await self.db["prefixes"].update_one({"guild_id": guild_id, "prefix": prefix})
 
     # this function will delete the prefix of a guild, reseting it to the standard one
     async def remove_prefix(self, *, guild_id: int) -> None:
-        result = await self.db.execute_fetchall(
-            "SELECT * FROM prefixes WHERE guild_id = ?", (guild_id,)
-        )
+        document = await self.db["prefixes"].find_one({"guild_id": guild_id})
 
-        if result is not None:
-            await self.db.execute("DELETE FROM prefixes WHERE guild_id = ?", (guild_id,))
-            await self.db.commit()
+        if document is not None:
+            await self.db["prefixes"].delete_one({"guild_id": guild_id})
 
     # this function will grab the prefix of the bot in a guild, if there is none the prefix will be the default one
     async def get_prefix(self, *, guild_id: int) -> str | None:
-        cursor = await self.db.execute(
-            "SELECT prefix FROM prefixes WHERE guild_id = ?", (guild_id,)
-        )
+        document = await self.db["prefixes"].find_one({"guild_id": guild_id})
 
-        result = await cursor.fetchone()
-
-        if result is not None:
-            return result["prefix"]
+        if document is not None:
+            return document["prefix"]
         else:
             return None
 
@@ -111,70 +93,63 @@ class Database:
 
     # anonimity
     async def anonimity_check(self, user_id):
-        cursor = await self.db.execute(
-            "SELECT anonymous FROM anonimity WHERE user_id = ?", (user_id,)
-        )
+        checker = await self.db["anonimity"].find_one({"user_id": user_id})
+        if checker is None:
+            await self.db["anonimity"].insert_one({"user_id": user_id, "anonimity": False})
+            checker = await self.db["anonimity"].find_one({"user_id": user_id})
 
-        result = await cursor.fetchone()
+        checker = checker["anonimity"]
 
-        if result is None or result["anonymous"] == 0:
-            return False
-        else:
-            return True
+        return checker
 
     # switch true or false anonymous mode
     async def switch_anonimous_mode(self, user_id):
-        cursor = await self.db.execute(
-            "SELECT anonymous FROM anonimity WHERE user_id = ?", (user_id,)
-        )
+        checker = await self.db["anonimity"].find_one({"user_id": user_id})
 
-        result = await cursor.fetchone()
+        switch = bool
 
-        if result is None:
-            await self.db.execute(
-                "INSERT INTO anonimity (user_id, anonymous) VALUES (?, ?)", (user_id, True)
-            )
-            await self.db.commit()
-
-            return True
-
-        elif result["anonymous"] == 1:
-            await self.db.execute(
-                "UPDATE anonimity SET anonymous = ? WHERE user_id = ?", (False, user_id)
-            )
-            await self.db.commit()
-
-            return False
-
+        if checker is None:
+            checker = await self.db["anonimity"].insert_one({"user_id": user_id, "anonimity": True})
+        elif checker["anonimity"]:
+            switch = False
         else:
-            await self.db.execute(
-                "UPDATE anonimity SET anonymous = ? WHERE user_id = ?", (True, user_id)
-            )
-            await self.db.commit()
+            switch = True
 
-            return True
+        await self.db["anonimity"].update_one({"user_id": user_id}, {"$set": {"anonimity": switch}})
+
+        return switch
 
     ### WEBHOOK LOG ###
     # to keep track which webhook belongs to the log serves well
 
     # this function serves as a webhook tracker each time a new message is made
     async def webhook_log_reg(self, *, user_id: int, message_id: int):
-        await self.db.execute(
-            "INSERT INTO webhook_logs (user_id, message_id) VALUES (?, ?)", (user_id, message_id)
+        database = await self.db["webhook_log"].find_one({"user_id": user_id})
+        if database is None:
+            await self.db["webhook_log"].insert_one({"user_id": user_id, "webhook_log": list()})
+            database = await self.db["webhook_log"].find_one({"user_id": user_id})
+
+        message_list = database["webhook_log"]
+
+        message_list.append(message_id)
+        if len(message_list) > 256:
+            message_list.pop(0)
+
+        await self.db["webhook_log"].update_one(
+            {"user_id": user_id}, {"$set": {"webhook_log": message_list}}
         )
-        await self.db.commit()
 
     async def webhook_log_confirm(self, *, user_id: int, message_id: int):
-        cursor = await self.db.execute(
-            "SELECT * FROM webhook_logs WHERE user_id = ? and message_id = ?", (user_id, message_id)
-        )
-
-        result = await cursor.fetchone()
-
-        if result is None:
-            return False
+        database = await self.db["webhook_log"].find_one({"user_id": user_id})
+        if database:
+            message_list = database["webhook_log"]
         else:
+            return False
+
+        if message_id in message_list:
             return True
+        else:
+            return False
 
     ### DEFAULT CHARACTERS ###
     # This is the standard version of creating characters, when you don't use templates you use default
@@ -197,6 +172,7 @@ class Database:
                 "image_url": result[4],
             }
             return data
+
         else:
             return None
 
@@ -230,14 +206,12 @@ class Database:
             else:
                 return None
 
+
     # this function will register the newly created character
     async def register_default_character(
         self, *, user_id: int, name: str, prompt_prefix: str, image: str | None = None
     ) -> None | str:
-        cursor = await self.db.execute_fetchall(
-            "SELECT * FROM default_characters WHERE user_id = ? and prompt = ?",
-            (user_id, prompt_prefix),
-        )
+        data = {prompt_prefix: {"name": name, "prompt_prefix": prompt_prefix, "image_url": image}}
 
         result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
 
@@ -247,10 +221,13 @@ class Database:
                 (user_id, name, prompt_prefix, image),
             )
 
-            await self.db.commit()
+        if prompt_prefix not in char_list:
+            char_list = char_list | data
 
+            await self.db["characters"].update_one(
+                {"user_id": user_id}, {"$set": {"characters": char_list}}
+            )
             return None
-
         else:
             return "ERROR"
 
@@ -282,10 +259,20 @@ class Database:
                     )
                     await self.db.commit()
 
-                    return "SUCESS"
+            if len(char_sub_list) == 0:
+                return "ERROR"
             else:
-                return result
-
+                if len(char_sub_list) == 1:
+                    if name:
+                        del char_list[char_sub_list[0]["prompt_prefix"]]
+                    elif prompt_prefix:
+                        del char_list[prompt_prefix]
+                    await self.db["characters"].update_one(
+                        {"user_id": user_id}, {"$set": {"characters": char_list}}
+                    )
+                    return "SUCESS"
+                else:
+                    return char_sub_list
         else:
             return "ERROR"
 
@@ -300,42 +287,69 @@ class Database:
         new_prompt_prefix: str | None = None,
         new_image: str | None = None,
     ) -> None | str | list:
-        cursor = await self.db.execute_fetchall(
-            "SELECT * FROM default_characters WHERE user_id = ? and (prompt = ? or char_name = ?)",
-            (user_id, old_prompt_prefix, old_name),
-        )
+        database = await self.db["characters"].find_one({"user_id": user_id})
 
         result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
 
         if len(result) > 0:
             if len(result) == 1:
                 if new_name:
-                    await self.db.execute(
-                        "UPDATE default_characters SET char_name = ? WHERE user_id = ? and (char_name = ? or prompt = ?)",
-                        (new_name, user_id, old_name, old_prompt_prefix),
-                    )
-                    await self.db.commit()
-
+                    char_list[old_prompt_prefix]["name"] = new_name
                     return "SUCESS"
                 elif new_prompt_prefix:
-                    await self.db.execute(
-                        "UPDATE default_characters SET prompt = ? WHERE user_id = ? and (char_name = ? or prompt = ?)",
-                        (new_prompt_prefix, user_id, old_name, old_prompt_prefix),
-                    )
-                    await self.db.commit()
-
+                    new_data = {
+                        new_prompt_prefix: {
+                            "name": char_list[old_prompt_prefix]["name"],
+                            "prompt_prefix": new_prompt_prefix,
+                            "image_url": char_list[old_prompt_prefix]["image_url"],
+                        }
+                    }
+                    del char_list[old_prompt_prefix]
+                    char_list.update(new_data)
                     return "SUCESS"
                 elif new_image:
-                    await self.db.execute(
-                        "UPDATE default_characters SET profile_pic = ? WHERE user_id = ? and (char_name = ? or prompt = ?)",
-                        (new_image, user_id, old_name, old_prompt_prefix),
-                    )
-                    await self.db.commit()
-
+                    char_list[old_prompt_prefix]["image_url"] = new_image
                     return "SUCESS"
-            else:
-                return result
+            elif old_name:
+                char_sub_list = list()
+                for i in char_list.values():
+                    if "name" in i:
+                        if old_name in i["name"]:
+                            char_sub_list.append(i)
 
+                if len(char_sub_list) == 0:
+                    return "ERROR"
+                elif len(char_sub_list) > 1:
+                    return char_sub_list
+                else:
+                    if new_name:
+                        char_list[char_sub_list[0]["prompt_prefix"]]["name"] = new_name
+                        await self.db["characters"].update_one(
+                            {"user_id": user_id}, {"$set": {"characters": char_list}}
+                        )
+                        return "SUCESS"
+                    elif new_prompt_prefix:
+                        new_data = {
+                            new_prompt_prefix: {
+                                "name": char_list[char_sub_list[0]["prompt_prefix"]]["name"],
+                                "prompt_prefix": new_prompt_prefix,
+                                "image_url": char_list[char_sub_list[0]["prompt_prefix"]][
+                                    "image_url"
+                                ],
+                            }
+                        }
+                        del char_list[old_prompt_prefix]
+                        char_list.update(new_data)
+                        await self.db["characters"].update_one(
+                            {"user_id": user_id}, {"$set": {"characters": char_list}}
+                        )
+                        return "SUCESS"
+                    elif new_image:
+                        char_list[char_sub_list[0]["prompt_prefix"]]["image_url"] = new_image
+                        await self.db["characters"].update_one(
+                            {"user_id": user_id}, {"$set": {"characters": char_list}}
+                        )
+                        return "SUCESS"
         else:
             return "ERROR"
 
@@ -368,17 +382,15 @@ class Database:
         if len(result) > 0:
             return result
 
-        else:
-            return None
+        return results if len(results) > 0 else None
 
     # This is a quicker version of search macro
     async def quick_search_macro(self, *, prefix: str, id: int):
-        cursor = await self.db.execute(
-            "SELECT * FROM macros WHERE belong_id = ? and macro_prefix = ?",
-            (id, prefix),
-        )
+        database = await self.db["macros"].find_one({"id": id})
 
-        result = await cursor.fetchone()
+        if not database:
+            await self.db["macros"].insert_one({"id": id, "macros": dict()})
+            database = await self.db["macros"].find_one({"id": id})
 
         if result:
             data = {
@@ -389,16 +401,20 @@ class Database:
             }
             return data
         else:
-            return None
+            return macros[prefix]
 
     # This function will register the Macros of server or bot users
     async def register_macro(
         self, *, prefix: str, args: str, macro_type: str, macro_attr: str, id: int
     ):
-        cursor = await self.db.execute_fetchall(
-            "SELECT * FROM macros WHERE belong_id = ? and macro_prefix = ? and command = ? and type = ?",
-            (id, prefix, args, macro_type),
-        )
+        macro_data = {
+            prefix: {
+                "prefix": prefix,
+                "cmd": args,
+                "type": macro_type,
+                "attribute": macro_attr,
+            }
+        }
 
         result = list(
             {
@@ -417,9 +433,15 @@ class Database:
             )
             await self.db.commit()
 
-            return "SUCESS"
-        else:
+        macros = database["macros"]
+
+        if prefix in macros:
             return "ERROR"
+
+        else:
+            macros.update(macro_data)
+            await self.db["macros"].update_one({"id": id}, {"$set": {"macros": macros}})
+            return "SUCESS"
 
     # This function will update macros from database
     async def update_macro(
@@ -477,19 +499,22 @@ class Database:
                         return "ERROR 3"
 
                 else:
-                    "ERROR 2"
+                    return "ERROR 3"
+            else:
+                return "ERROR 2"
 
+            await self.db["macros"].update_one({"id": id}, {"$set": {"macros": macros}})
+            return "SUCESS"
         else:
             return "ERROR 1"
 
     # This function will delete macros from database
     async def delete_macro(self, *, prefix: str, id: int):
-        cursor = await self.db.execute(
-            "SELECT * FROM macros WHERE belong_id = ? and macro_prefix = ?",
-            (id, prefix),
-        )
+        database = await self.db["macros"].find_one({"id": id})
 
-        result = cursor.fetchone()
+        if not database:
+            await self.db["macros"].insert_one({"id": id, "macros": dict()})
+            database = await self.db["macros"].find_one({"id": id})
 
         if result is not None:
             await self.db.execute(
@@ -497,7 +522,9 @@ class Database:
             )
             await self.db.commit()
 
+        if prefix in macros:
+            del macros[prefix]
+            await self.db["macros"].update_one({"id": id}, {"$set": {"macros": macros}})
             return "SUCESS"
-
         else:
             return "ERROR"
