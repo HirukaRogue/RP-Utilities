@@ -206,7 +206,6 @@ class Database:
             else:
                 return None
 
-
     # this function will register the newly created character
     async def register_default_character(
         self, *, user_id: int, name: str, prompt_prefix: str, image: str | None = None
@@ -382,7 +381,8 @@ class Database:
         if len(result) > 0:
             return result
 
-        return results if len(results) > 0 else None
+        else:
+            return None
 
     # This is a quicker version of search macro
     async def quick_search_macro(self, *, prefix: str, id: int):
@@ -415,6 +415,16 @@ class Database:
                 "attribute": macro_attr,
             }
         }
+
+        result = list(
+            {
+                "prefix": i[2],
+                "cmd": i[3],
+                "type": i[4],
+                "attribute": i[5],
+            }
+            for i in cursor
+        )
 
         result = list(
             {
