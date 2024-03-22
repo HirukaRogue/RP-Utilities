@@ -1,6 +1,4 @@
-import asyncio
 import aiosqlite
-import traceback
 
 PREFIX_TABLE = """
 CREATE TABLE IF NOT EXISTS prefixes (
@@ -25,7 +23,7 @@ CREATE TABLE IF NOT EXISTS webhook_logs (
 
 DEFAULT_CHARACTER_TABLE = """
 CREATE TABLE IF NOT EXISTS default_characters (
-    id INT,
+    id INT PRIMARY KEY,
     user_id INT,
     char_name TEXT,
     prompt TEXT,
@@ -35,7 +33,7 @@ CREATE TABLE IF NOT EXISTS default_characters (
 
 MACRO_TABLE = """
 CREATE TABLE IF NOT EXISTS macros (
-    id INT,
+    id INT PRIMARY KEY,
     belong_id INT,
     macro_prefix TEXT,
     command TEXT,
@@ -194,9 +192,9 @@ class Database:
 
         if result:
             data = {
-                "name": result["char_name"],
-                "prompt_prefix": result["prompt"],
-                "image_url": result["profile_pic"],
+                "name": result[2],
+                "prompt_prefix": result[3],
+                "image_url": result[4],
             }
             return data
         else:
@@ -212,19 +210,12 @@ class Database:
                 (user_id, prompt_prefix, name),
             )
 
-            result = list({i} for i in cursor)
+            result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
 
-            result_list = list()
-
-            for i in result:
-                data = {
-                    "name": i["char_name"],
-                    "prompt_prefix": i["prompt"],
-                    "image_url": i["profile_pic"],
-                }
-                result_list.append(data)
-
-            return result_list
+            if len(result) > 0:
+                return result
+            else:
+                return None
 
         else:
             cursor = await self.db.execute_fetchall(
@@ -232,19 +223,12 @@ class Database:
                 (user_id,),
             )
 
-            result = list({i} for i in cursor)
+            result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
 
-            result_list = list()
-
-            for i in result:
-                data = {
-                    "name": i["char_name"],
-                    "prompt_prefix": i["prompt"],
-                    "image_url": i["profile_pic"],
-                }
-                result.append(data)
-
-            return result_list
+            if len(result) > 0:
+                return result
+            else:
+                return None
 
     # this function will register the newly created character
     async def register_default_character(
@@ -255,9 +239,9 @@ class Database:
             (user_id, prompt_prefix),
         )
 
-        result = list({i} for i in cursor)
+        result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
 
-        if len(result[0]) == 0:
+        if len(result) == 0:
             await self.db.execute(
                 "INSERT INTO default_characters (user_id, char_name, prompt, profile_pic) VALUES (?, ?, ?, ?)",
                 (user_id, name, prompt_prefix, image),
@@ -279,20 +263,22 @@ class Database:
             (user_id, prompt_prefix, name),
         )
 
-        result = list({i} for i in cursor)
+        result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
 
-        if len(result[0]) > 0:
+        if len(result) > 0:
             if len(result) == 1:
                 if name:
                     await self.db.execute(
-                        "DELETE FROM default_characters WHERE user_id = ? and char_name = ?"
+                        "DELETE FROM default_characters WHERE user_id = ? and char_name = ?",
+                        (user_id, name),
                     )
                     await self.db.commit()
 
                     return "SUCESS"
                 elif prompt_prefix:
                     await self.db.execute(
-                        "DELETE FROM default_characters WHERE user_id = ? and char_name = ?"
+                        "DELETE FROM default_characters WHERE user_id = ? and prompt = ?",
+                        (user_id, prompt_prefix),
                     )
                     await self.db.commit()
 
@@ -319,9 +305,9 @@ class Database:
             (user_id, old_prompt_prefix, old_name),
         )
 
-        result = list({i} for i in cursor)
+        result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
 
-        if len(result[0]) > 0:
+        if len(result) > 0:
             if len(result) == 1:
                 if new_name:
                     await self.db.execute(
@@ -358,27 +344,29 @@ class Database:
 
     # This function will search macros from the user and the server they are within
     async def search_macro(self, *, search: str | None = None, id: int) -> None | list:
-        cursor = await self.db.execute_fetchall(
-            r"SELECT * FROM macros WHERE belong_id = ? and macro_prefix like %?%",
-            (id, search),
+        if search:
+            cursor = await self.db.execute_fetchall(
+                r"SELECT * FROM macros WHERE belong_id = ? and macro_prefix LIKE %?%",
+                (id, search),
+            )
+        else:
+            cursor = await self.db.execute_fetchall(
+                r"SELECT * FROM macros WHERE belong_id = ?",
+                (id,),
+            )
+
+        result = list(
+            {
+                "prefix": i[2],
+                "cmd": i[3],
+                "type": i[4],
+                "attribute": i[5],
+            }
+            for i in cursor
         )
 
-        result = list({i} for i in cursor)
-
-        result_list = list()
-
-        if len(result[0]) > 0:
-            for i in result:
-                data = {
-                    "prefix": i["macro_prefix"],
-                    "cmd": i["command"],
-                    "type": i["type"],
-                    "attribute": i["attribute"],
-                }
-
-                result_list.append(data)
-
-            return result_list
+        if len(result) > 0:
+            return result
 
         else:
             return None
@@ -394,10 +382,10 @@ class Database:
 
         if result:
             data = {
-                "prefix": result["macro_prefix"],
-                "cmd": result["command"],
-                "type": result["type"],
-                "attribute": result["attribute"],
+                "prefix": result[2],
+                "cmd": result[3],
+                "type": result[4],
+                "attribute": result[5],
             }
             return data
         else:
@@ -412,11 +400,20 @@ class Database:
             (id, prefix, args, macro_type),
         )
 
-        result = list({i} for i in cursor)
+        result = list(
+            {
+                "prefix": i[2],
+                "cmd": i[3],
+                "type": i[4],
+                "attribute": i[5],
+            }
+            for i in cursor
+        )
 
-        if len(result[0]) == 0:
+        if len(result) == 0:
             await self.db.execute(
-                "INSERT INTO macros (belong_id, macro_prefix, command, type, attribute) VALUES (?, ?, ?, ?, ?)"
+                "INSERT INTO macros (belong_id, macro_prefix, command, type, attribute) VALUES (?, ?, ?, ?, ?)",
+                (id, prefix, args, macro_type, macro_attr),
             )
             await self.db.commit()
 
@@ -439,7 +436,15 @@ class Database:
             (id, old_prefix),
         )
 
-        result = list({i} for i in cursor)
+        result = list(
+            {
+                "prefix": i[2],
+                "cmd": i[3],
+                "type": i[4],
+                "attribute": i[5],
+            }
+            for i in cursor
+        )
 
         if len(result[0]) > 0:
             if len(result) == 1:
@@ -488,7 +493,7 @@ class Database:
 
         if result is not None:
             await self.db.execute(
-                "DELETE FROM prefixes WHERE guild_id = ? and macro_prefix = ?", (id, prefix)
+                "DELETE FROM macros WHERE belong_id = ? and macro_prefix = ?", (id, prefix)
             )
             await self.db.commit()
 

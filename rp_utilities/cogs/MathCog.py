@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from help import Help
 
-from sympy import *
+from sympy import sympify
+
 
 class MathCog(commands.Cog):
     def __init__(self, client):
@@ -18,12 +18,13 @@ class MathCog(commands.Cog):
         string_result = args
         result = sympify(args)
         string_result = f"Problem: {args}\nSolution:{result}"
-        embed = discord.Embed(
-            description=string_result
-        )
+        embed = discord.Embed(description=string_result)
         await ctx.send(embed=embed)
 
-    @app_commands.command(name="math", description="Do math operations, such as 2+2, you can also make complex math operations")
+    @app_commands.command(
+        name="math",
+        description="Do math operations, such as 2+2, you can also make complex math operations",
+    )
     @app_commands.describe(
         args="set math operations to be operated, such as 2+2, can make advanced operations"
     )
@@ -31,11 +32,9 @@ class MathCog(commands.Cog):
         string_result = args
         result = sympify(args)
         string_result = f"Problem: {args}\nSolution:{result}"
-        embed = discord.Embed(
-            description=string_result
-        )
+        embed = discord.Embed(description=string_result)
         await interaction.response.send_message(embed=embed)
-    
+
 
 async def setup(client):
     await client.add_cog(MathCog(client))
