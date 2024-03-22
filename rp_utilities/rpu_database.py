@@ -1,46 +1,7 @@
-import aiosqlite
-
-PREFIX_TABLE = """
-CREATE TABLE IF NOT EXISTS prefixes (
-    guild_id INT,
-    prefix TEXT
-    )
-"""
-
-ANONIMITY_TABLE = """
-CREATE TABLE IF NOT EXISTS anonimity (
-    user_id INT,
-    anonymous INT
-    )
-"""
-
-WEBHOOK_LOG_TABLE = """
-CREATE TABLE IF NOT EXISTS webhook_logs (
-    user_id INT,
-    message_id INT
-    )
-"""
-
-DEFAULT_CHARACTER_TABLE = """
-CREATE TABLE IF NOT EXISTS default_characters (
-    id INT PRIMARY KEY,
-    user_id INT,
-    char_name TEXT,
-    prompt TEXT,
-    profile_pic TEXT
-    )
-"""
-
-MACRO_TABLE = """
-CREATE TABLE IF NOT EXISTS macros (
-    id INT PRIMARY KEY,
-    belong_id INT,
-    macro_prefix TEXT,
-    command TEXT,
-    type TEXT,
-    attribute TEXT
-    )
-"""
+import motor
+import asyncio
+import pymongo
+import motor.motor_asyncio
 
 
 class Database:
@@ -158,21 +119,13 @@ class Database:
     async def quick_search_default_character(
         self, *, user_id: int, prompt_prefix: str
     ) -> None | dict:
-        cursor = await self.db.execute(
-            "SELECT * FROM default_characters WHERE user_id = ? and prompt = ?",
-            (user_id, prompt_prefix),
-        )
-
-        result = await cursor.fetchone()
-
-        if result:
-            data = {
-                "name": result[2],
-                "prompt_prefix": result[3],
-                "image_url": result[4],
-            }
-            return data
-
+        database = await self.db["characters"].find_one({"user_id": user_id})
+        if database:
+            char_list = database["characters"]
+            if prompt_prefix in char_list:
+                return char_list[prompt_prefix]
+            else:
+                return None
         else:
             return None
 
@@ -180,32 +133,27 @@ class Database:
     async def search_default_character(
         self, *, user_id: int, name: str | None = None, prompt_prefix: str | None = None
     ) -> None | list:
-        if name or prompt_prefix:
-            cursor = await self.db.execute_fetchall(
-                r"SELECT * FROM default_characters WHERE user_id = ? and (prompt like %?% or char_name like %?%)",
-                (user_id, prompt_prefix, name),
-            )
-
-            result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
-
-            if len(result) > 0:
-                return result
+        database = await self.db["characters"].find_one({"user_id": user_id})
+        documents = list()
+        if database:
+            char_list = database["characters"]
+            if name and prompt_prefix:
+                for i in char_list.values():
+                    if name in i["name"] and prompt_prefix in i["prompt_prefix"]:
+                        documents.append(i)
+            elif prompt_prefix:
+                for i in char_list.values():
+                    if prompt_prefix in i["prompt_prefix"]:
+                        documents.append(i)
+            elif name:
+                for i in char_list.values():
+                    if name in i["name"]:
+                        documents.append(i)
             else:
-                return None
+                for i in char_list.values():
+                    documents.append(i)
 
-        else:
-            cursor = await self.db.execute_fetchall(
-                "SELECT * FROM default_characters WHERE user_id = ?",
-                (user_id,),
-            )
-
-            result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
-
-            if len(result) > 0:
-                return result
-            else:
-                return None
-
+        return documents if len(documents) > 0 else None
 
     # this function will register the newly created character
     async def register_default_character(
@@ -213,13 +161,12 @@ class Database:
     ) -> None | str:
         data = {prompt_prefix: {"name": name, "prompt_prefix": prompt_prefix, "image_url": image}}
 
-        result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
+        database = await self.db["characters"].find_one({"user_id": user_id})
+        if not database:
+            await self.db["characters"].insert_one({"user_id": user_id, "characters": dict()})
+            database = await self.db["characters"].find_one({"user_id": user_id})
 
-        if len(result) == 0:
-            await self.db.execute(
-                "INSERT INTO default_characters (user_id, char_name, prompt, profile_pic) VALUES (?, ?, ?, ?)",
-                (user_id, name, prompt_prefix, image),
-            )
+        char_list = database["characters"]
 
         if prompt_prefix not in char_list:
             char_list = char_list | data
@@ -235,29 +182,22 @@ class Database:
     async def delete_default_character(
         self, *, user_id: int, name: str | None = None, prompt_prefix: str | None = None
     ) -> None | str | list:
-        cursor = await self.db.execute_fetchall(
-            "SELECT * FROM default_characters WHERE user_id = ? and (prompt = ? or char_name = ?)",
-            (user_id, prompt_prefix, name),
-        )
+        database = await self.db["characters"].find_one({"user_id": user_id})
 
-        result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
+        if database:
+            char_list = database["characters"]
 
-        if len(result) > 0:
-            if len(result) == 1:
-                if name:
-                    await self.db.execute(
-                        "DELETE FROM default_characters WHERE user_id = ? and char_name = ?",
-                        (user_id, name),
-                    )
-                    await self.db.commit()
-
-                    return "SUCESS"
+            char_sub_list = list()
+            for i in char_list.values():
+                if name and prompt_prefix:
+                    if name in i["name"] or prompt_prefix in i["prompt_prefix"]:
+                        char_sub_list.append(i)
+                elif name:
+                    if name in i["name"]:
+                        char_sub_list.append(i)
                 elif prompt_prefix:
-                    await self.db.execute(
-                        "DELETE FROM default_characters WHERE user_id = ? and prompt = ?",
-                        (user_id, prompt_prefix),
-                    )
-                    await self.db.commit()
+                    if prompt_prefix in i["prompt_prefix"]:
+                        char_sub_list.append(i)
 
             if len(char_sub_list) == 0:
                 return "ERROR"
@@ -289,10 +229,10 @@ class Database:
     ) -> None | str | list:
         database = await self.db["characters"].find_one({"user_id": user_id})
 
-        result = list({"name": i[2], "prompt_prefix": i[3], "image_url": i[4]} for i in cursor)
+        if database:
+            char_list = database["characters"]
 
-        if len(result) > 0:
-            if len(result) == 1:
+            if old_prompt_prefix in char_list:
                 if new_name:
                     char_list[old_prompt_prefix]["name"] = new_name
                     return "SUCESS"
@@ -358,29 +298,22 @@ class Database:
 
     # This function will search macros from the user and the server they are within
     async def search_macro(self, *, search: str | None = None, id: int) -> None | list:
-        if search:
-            cursor = await self.db.execute_fetchall(
-                r"SELECT * FROM macros WHERE belong_id = ? and macro_prefix LIKE %?%",
-                (id, search),
-            )
-        else:
-            cursor = await self.db.execute_fetchall(
-                r"SELECT * FROM macros WHERE belong_id = ?",
-                (id,),
-            )
+        database = await self.db["macros"].find_one({"id": id})
 
-        result = list(
-            {
-                "prefix": i[2],
-                "cmd": i[3],
-                "type": i[4],
-                "attribute": i[5],
-            }
-            for i in cursor
-        )
+        if not database:
+            await self.db["macros"].insert_one({"id": id, "macros": dict()})
+            database = await self.db["macros"].find_one({"id": id})
 
-        if len(result) > 0:
-            return result
+        macros = database["macros"]
+
+        if search is None:
+            return list(macros.values())
+
+        results = list()
+
+        for i in macros.values():
+            if search in i["prefix"]:
+                results.append(i)
 
         return results if len(results) > 0 else None
 
@@ -392,14 +325,12 @@ class Database:
             await self.db["macros"].insert_one({"id": id, "macros": dict()})
             database = await self.db["macros"].find_one({"id": id})
 
-        if result:
-            data = {
-                "prefix": result[2],
-                "cmd": result[3],
-                "type": result[4],
-                "attribute": result[5],
-            }
-            return data
+        macros = database["macros"]
+
+        if len(macros) == 0:
+            return "ERROR"
+        elif prefix not in macros:
+            return "ERROR"
         else:
             return macros[prefix]
 
@@ -416,22 +347,11 @@ class Database:
             }
         }
 
-        result = list(
-            {
-                "prefix": i[2],
-                "cmd": i[3],
-                "type": i[4],
-                "attribute": i[5],
-            }
-            for i in cursor
-        )
+        database = await self.db["macros"].find_one({"id": id})
 
-        if len(result) == 0:
-            await self.db.execute(
-                "INSERT INTO macros (belong_id, macro_prefix, command, type, attribute) VALUES (?, ?, ?, ?, ?)",
-                (id, prefix, args, macro_type, macro_attr),
-            )
-            await self.db.commit()
+        if not database:
+            await self.db["macros"].insert_one({"id": id, "macros": dict()})
+            database = await self.db["macros"].find_one({"id": id})
 
         macros = database["macros"]
 
@@ -453,51 +373,31 @@ class Database:
         macro_attr: str | None = None,
         id: int,
     ):
-        cursor = await self.db.execute_fetchall(
-            "SELECT * FROM macros WHERE belong_id = ? and macro_prefix = ?",
-            (id, old_prefix),
-        )
+        database = await self.db["macros"].find_one({"id": id})
 
-        result = list(
-            {
-                "prefix": i[2],
-                "cmd": i[3],
-                "type": i[4],
-                "attribute": i[5],
-            }
-            for i in cursor
-        )
+        if not database:
+            await self.db["macros"].insert_one({"id": id, "macros": dict()})
+            database = await self.db["macros"].find_one({"id": id})
 
-        if len(result[0]) > 0:
-            if len(result) == 1:
-                if new_prefix:
-                    await self.db.execute(
-                        "UPDATE macros SET macro_prefix = ? WHERE belong_id = ?", (new_prefix, id)
-                    )
-                    await self.db.commit()
+        macros = database["macros"]
 
-                    return "SUCESS"
-
-                elif args:
-                    await self.db.execute(
-                        "UPDATE macros SET command = ? WHERE belong_id = ?", (args, id)
-                    )
-                    await self.db.commit()
-
-                    return "SUCESS"
-
-                elif macro_attr:
-                    if result[0]["type"] == "server":
-                        await self.db.execute(
-                            "UPDATE macros SET attribute = ? WHERE belong_id = ?", (macro_attr, id)
-                        )
-                        await self.db.commit()
-
-                        return "SUCESS"
-
-                    else:
-                        return "ERROR 3"
-
+        if old_prefix in macros:
+            if new_prefix:
+                new_data = {
+                    new_prefix: {
+                        "prefix": new_prefix,
+                        "cmd": macros[old_prefix]["cmd"],
+                        "type": macros[old_prefix]["type"],
+                        "attribute": macros[old_prefix]["attribute"],
+                    }
+                }
+                del macros[old_prefix]
+                macros.update(new_data)
+            elif args:
+                macros[old_prefix]["cmd"] = args
+            elif macro_attr:
+                if macros[old_prefix]["type"] == "server":
+                    macros[old_prefix]["attribute"] = macro_attr
                 else:
                     return "ERROR 3"
             else:
@@ -516,11 +416,7 @@ class Database:
             await self.db["macros"].insert_one({"id": id, "macros": dict()})
             database = await self.db["macros"].find_one({"id": id})
 
-        if result is not None:
-            await self.db.execute(
-                "DELETE FROM macros WHERE belong_id = ? and macro_prefix = ?", (id, prefix)
-            )
-            await self.db.commit()
+        macros = database["macros"]
 
         if prefix in macros:
             del macros[prefix]
