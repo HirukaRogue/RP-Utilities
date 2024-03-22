@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands
+from discord import Intents
+from functools import lru_cache
 
 
 class ActionCog(commands.Cog):

@@ -1,3 +1,4 @@
+from pydoc import describe
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -83,14 +84,12 @@ class MacroCog(commands.Cog):
             search_result = await ctx.bot.database.search_macro(id=user)
             if ctx.author.guild_permissions.administrator:
                 search_pivot = await ctx.bot.database.search_macro(id=server)
-                if search_pivot:
-                    search_result = unify(search_result, search_pivot)
+                search_result = unify(search_result, search_pivot)
         else:
             search_result = await ctx.bot.database.search_macro(id=user, search=search)
             if ctx.author.guild_permissions.administrator:
                 search_pivot = await ctx.bot.database.search_macro(id=server, search=search)
-                if search_pivot:
-                    search_result = unify(search_result, search_pivot)
+                search_result = unify(search_result, search_pivot)
 
         prompt_result = "No results found" if search_result is None else prompt_result
         pages = list()
