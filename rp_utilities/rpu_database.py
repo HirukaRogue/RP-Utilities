@@ -174,27 +174,6 @@ class Database:
                 result_list.append(data)
 
             return result_list
-        database = await self.db["characters"].find_one({"user_id": user_id})
-        documents = list()
-        if database:
-            char_list = database["characters"]
-            if name and prompt_prefix:
-                for i in char_list.values():
-                    if name in i["name"] and prompt_prefix in i["prompt_prefix"]:
-                        documents.append(i)
-            elif prompt_prefix:
-                for i in char_list.values():
-                    if prompt_prefix in i["prompt_prefix"]:
-                        documents.append(i)
-            elif name:
-                for i in char_list.values():
-                    if name in i["name"]:
-                        documents.append(i)
-            else:
-                for i in char_list.values():
-                    documents.append(i)
-
-        return documents if len(documents) > 0 else None
 
     # this function will register the newly created character
     async def register_default_character(
@@ -342,9 +321,6 @@ class Database:
                     "type": i[4],
                     "attribute": i[5],
                 }
-
-                result_list.append(data)
-
             return result_list
         else:
             return None
@@ -357,9 +333,6 @@ class Database:
         )
 
         result = await cursor.fetchone()
-
-        macros = database["macros"]
-
         if len(macros) == 0:
             return "ERROR"
         elif prefix not in macros:
