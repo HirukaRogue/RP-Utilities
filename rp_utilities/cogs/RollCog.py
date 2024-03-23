@@ -2,9 +2,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import random
-from sympy import *
+from sympy import sympify
 import re
-from help import Help
 
 
 class RollCog(commands.Cog):
