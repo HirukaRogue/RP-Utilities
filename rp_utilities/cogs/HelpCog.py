@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from help import Help
 
+
 class HelpCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -15,7 +16,7 @@ class HelpCog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("HelpCog.py is ready")
-    
+
 
 async def setup(bot):
     await bot.add_cog(HelpCog(bot))
