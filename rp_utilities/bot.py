@@ -1,11 +1,8 @@
 import bot_token
 import discord
-from discord import app_commands
-import asyncio
 from discord.ext import commands
 import os
 from rpu_database import Database
-from help import Help
 import logging
 
 handler = logging.FileHandler(filename="rpu_log.log", encoding="utf-8", mode="w")
@@ -31,7 +28,7 @@ class Bot(commands.Bot):
         print("Bot Connected!")
 
     async def setup_hook(self) -> None:
-        await self.database.connect("mongodb://localhost:27017")
+        await self.database.connect()
         for extension in EXTENSIONS:
             await self.load_extension(extension)
         await self.add_cog(PrefixCog(self))
