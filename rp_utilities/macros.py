@@ -1,15 +1,12 @@
 from email import message
 from sys import prefix
 import traceback
-import asyncio
 import random
-from colorama import init
 import lark
-from sympy import content, sympify
+from sympy import sympify
 import re
-from lark import Lark, Tree, Transformer
+from lark import Lark, Transformer
 import discord
-from discord.utils import get
 from pagination import Paginator
 
 

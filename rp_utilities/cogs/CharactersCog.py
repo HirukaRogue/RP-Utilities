@@ -1,17 +1,11 @@
-from email.mime import image
 from sys import prefix
-from unittest import result
 import discord
 from discord import app_commands
 from discord.ext import commands
-from discord.ext import menus
-from discord import ui
-import asyncio
 
 from pagination import Paginator
 from milascenous import is_link
 from milascenous import unify
-from help import Help
 
 from copy import deepcopy
 

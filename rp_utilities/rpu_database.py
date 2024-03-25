@@ -1,7 +1,46 @@
-import motor
-import asyncio
-import pymongo
-import motor.motor_asyncio
+import aiosqlite
+
+PREFIX_TABLE = """
+CREATE TABLE IF NOT EXISTS prefixes (
+    guild_id INT,
+    prefix TEXT
+    )
+"""
+
+ANONIMITY_TABLE = """
+CREATE TABLE IF NOT EXISTS anonimity (
+    user_id INT,
+    anonymous INT
+    )
+"""
+
+WEBHOOK_LOG_TABLE = """
+CREATE TABLE IF NOT EXISTS webhook_logs (
+    user_id INT,
+    message_id INT
+    )
+"""
+
+DEFAULT_CHARACTER_TABLE = """
+CREATE TABLE IF NOT EXISTS default_characters (
+    id INT PRIMARY KEY,
+    user_id INT,
+    char_name TEXT,
+    prompt TEXT,
+    profile_pic TEXT
+    )
+"""
+
+MACRO_TABLE = """
+CREATE TABLE IF NOT EXISTS macros (
+    id INT PRIMARY KEY,
+    belong_id INT,
+    macro_prefix TEXT,
+    command TEXT,
+    type TEXT,
+    attribute TEXT
+    )
+"""
 
 
 class Database:
@@ -121,13 +160,21 @@ class Database:
     async def quick_search_default_character(
         self, *, user_id: int, prompt_prefix: str
     ) -> None | dict:
-        database = await self.db["characters"].find_one({"user_id": user_id})
-        if database:
-            char_list = database["characters"]
-            if prompt_prefix in char_list:
-                return char_list[prompt_prefix]
-            else:
-                return None
+        cursor = await self.db.execute(
+            "SELECT * FROM default_characters WHERE user_id = ? and prompt = ?",
+            (user_id, prompt_prefix),
+        )
+
+        result = await cursor.fetchone()
+
+        if result:
+            data = {
+                "name": result[2],
+                "prompt_prefix": result[3],
+                "image_url": result[4],
+            }
+            return data
+
         else:
             return None
 
@@ -215,17 +262,7 @@ class Database:
                     )
                     await self.db.commit()
 
-        if database:
-            char_list = database["characters"]
-
-            char_sub_list = list()
-            for i in char_list.values():
-                if name and prompt_prefix:
-                    if name in i["name"] or prompt_prefix in i["prompt_prefix"]:
-                        char_sub_list.append(i)
-                elif name:
-                    if name in i["name"]:
-                        char_sub_list.append(i)
+                    return "SUCESS"
                 elif prompt_prefix:
                     await self.db.execute(
                         "DELETE FROM default_characters WHERE user_id = ? and char_name = ?",
@@ -321,6 +358,9 @@ class Database:
                     "type": i[4],
                     "attribute": i[5],
                 }
+
+                result_list.append(data)
+
             return result_list
         else:
             return None
@@ -333,10 +373,15 @@ class Database:
         )
 
         result = await cursor.fetchone()
-        if len(macros) == 0:
-            return "ERROR"
-        elif prefix not in macros:
-            return "ERROR"
+
+        if result:
+            data = {
+                "prefix": result[2],
+                "cmd": result[3],
+                "type": result[4],
+                "attribute": result[5],
+            }
+            return data
         else:
             return None
 
@@ -403,29 +448,11 @@ class Database:
                         )
                         await self.db.commit()
 
-        if not database:
-            await self.db["macros"].insert_one({"id": id, "macros": dict()})
-            database = await self.db["macros"].find_one({"id": id})
+                        return "SUCESS"
 
-        macros = database["macros"]
+                    else:
+                        return "ERROR 3"
 
-        if old_prefix in macros:
-            if new_prefix:
-                new_data = {
-                    new_prefix: {
-                        "prefix": new_prefix,
-                        "cmd": macros[old_prefix]["cmd"],
-                        "type": macros[old_prefix]["type"],
-                        "attribute": macros[old_prefix]["attribute"],
-                    }
-                }
-                del macros[old_prefix]
-                macros.update(new_data)
-            elif args:
-                macros[old_prefix]["cmd"] = args
-            elif macro_attr:
-                if macros[old_prefix]["type"] == "server":
-                    macros[old_prefix]["attribute"] = macro_attr
                 else:
                     return "ERROR 3"
             else:
