@@ -28,7 +28,7 @@ class ProfileCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @app_commands.command(name="profile", description="Shows the profile of the bot")
-    async def profile_slash(self, interaction: discord.Interaction, args: str):
+    async def profile_slash(self, interaction: discord.Interaction):
         embed = discord.Embed(title="Roleplay Utilities", description="A roleplay super tool bot")
         embed.add_field(
             name="Invite me",
