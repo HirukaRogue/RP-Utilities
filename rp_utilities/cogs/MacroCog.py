@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from sympy import true
 
 import macros
 from copy import deepcopy
@@ -46,12 +45,12 @@ class MacroCog(commands.Cog):
                     await i.start(ctx)
                 elif isinstance(i, list):
                     y = i
-                    while true:
+                    while True:
                         if isinstance(y, list) and len(y) > 1:
-                            y = i[0][0]
+                            y = y[0][0]
                         if isinstance(y, str) or isinstance(y, float):
                             break
-                        y = i[0]
+                        y = y[0]
                     embed = discord.Embed(description=y)
                     await message.channel.send(embed=embed)
                 elif i is not None:

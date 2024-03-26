@@ -590,7 +590,7 @@ class CharactersCog(commands.Cog):
         user = ctx.author.id
 
         result = await self.client.database.quick_search_default_character(
-            user_id=user, old_prompt_prefix=prompt
+            user_id=user, prompt_prefix=prompt
         )
 
         if result is None:
@@ -599,7 +599,7 @@ class CharactersCog(commands.Cog):
                 description=f"you have no characters with prefix {prompt}",
             )
         else:
-            result = result[0]
+            result = result
             embed = discord.Embed(
                 title=f"Profile picture of {result['name']}",
                 description="There is no profile picture" if not result["image_url"] else None,
@@ -620,7 +620,7 @@ class CharactersCog(commands.Cog):
     ):
         user = ctx.author.id
 
-        result = await self.client.database.quick_search_default_character(
+        result = await self.client.database.update_default_character(
             user_id=user, old_prompt_prefix=prompt, new_image=image
         )
 
@@ -654,8 +654,8 @@ class CharactersCog(commands.Cog):
         user = interaction.user.id
         url = image1.url if image1 else image2
 
-        result = await self.client.database.quick_search_default_character(
-            user_id=user, prompt_prefix=prompt, new_image=url
+        result = await self.client.database.update_default_character(
+            user_id=user, old_prompt_prefix=prompt, new_image=url
         )
 
         if result is None:
