@@ -1,5 +1,3 @@
-from email import message
-from sys import prefix
 import traceback
 import random
 import lark
@@ -220,11 +218,51 @@ def exeselect(args):
 ##################
 def exeecho(args):
     if len(args) == 1:
-        pages = discord.Embed(description=args)
+        y = args
+        if isinstance(y, list):
+            while True:
+                print(f"{y = }")
+                if len(y) > 1:
+                    piv = ""
+                    for z in y:
+                        piv = piv + (
+                            z
+                            if z == y[-1] and isinstance(z, str)
+                            else (
+                                f"{z[1]}"
+                                if z == y[-1]
+                                else f" {z}" if isinstance(z, str) else f" {z[1]}"
+                            )
+                        )
+                    y = piv
+                if isinstance(y, str) or isinstance(y, float):
+                    break
+                y = y[0]
+        pages = discord.Embed(description=y)
     else:
         chapters = list()
         for i in args:
-            embed = discord.Embed(description=i)
+            y = i
+            if isinstance(y, list):
+                while True:
+                    print(f"{y = }")
+                    if len(y) > 1:
+                        piv = ""
+                        for z in y:
+                            piv = piv + (
+                                z
+                                if z == y[-1] and isinstance(z, str)
+                                else (
+                                    f"{z[1]}"
+                                    if z == y[-1]
+                                    else f" {z}" if isinstance(z, str) else f" {z[1]}"
+                                )
+                            )
+                        y = piv
+                    if isinstance(y, str) or isinstance(y, float):
+                        break
+                    y = y[0]
+            embed = discord.Embed(description=y)
             chapters.append(embed)
         pages = Paginator(chapters)
     return pages
@@ -324,7 +362,6 @@ class Compiler(Transformer):
         return cmd
 
     def math(self, cmd):
-        print(cmd)
         m = cmd
 
         if len(cmd) > 1:
@@ -360,7 +397,6 @@ class Compiler(Transformer):
         return [result]
 
     def echo(self, cmd):
-        print(cmd)
         ec = cmd[0]
         prompt = exeecho(ec)
         return [prompt]
@@ -550,13 +586,10 @@ class Compiler(Transformer):
     def variable(self, cmd):
         var = cmd
         variables.append(var)
-        print(variables)
         return var
 
     def use_var(self, cmd):
         var_pos = int(cmd[0])
-        print(var_pos)
-        print(variables)
         use_var = variables[var_pos]
         return use_var
 
@@ -600,7 +633,6 @@ class Compiler(Transformer):
         return exp
 
     def key_cont(self, cmd):
-        print(cmd)
         kcont = cmd[0][0]
         return kcont
 

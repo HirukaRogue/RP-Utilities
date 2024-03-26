@@ -38,22 +38,22 @@ class MacroCog(commands.Cog):
 
         if not isinstance(result, tuple):
             for i in result:
-                if isinstance(i, discord.Embed):
-                    await message.channel.send(embed=i)
-                elif isinstance(i, Paginator):
+                print(f"{i = }")
+                z = i[0] or None
+                if isinstance(z, discord.Embed):
+                    await message.channel.send(embed=z)
+                elif isinstance(z, Paginator):
                     ctx = await self.client.get_context(message)
-                    await i.start(ctx)
-                elif isinstance(i, list):
+                    await z.start(ctx)
+                elif isinstance(z, list):
                     y = i
                     while True:
-                        if isinstance(y, list) and len(y) > 1:
-                            y = y[0][0]
                         if isinstance(y, str) or isinstance(y, float):
                             break
                         y = y[0]
                     embed = discord.Embed(description=y)
                     await message.channel.send(embed=embed)
-                elif i is not None:
+                elif z is not None:
                     embed = discord.Embed(description=i)
                     await message.channel.send(embed=embed)
 
