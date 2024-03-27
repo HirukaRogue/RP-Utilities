@@ -238,6 +238,7 @@ def exeecho(args):
                 if isinstance(y, str) or isinstance(y, float):
                     break
                 y = y[0]
+
         pages = discord.Embed(description=y)
     else:
         chapters = list()
@@ -262,6 +263,7 @@ def exeecho(args):
                     if isinstance(y, str) or isinstance(y, float):
                         break
                     y = y[0]
+
             embed = discord.Embed(description=y)
             chapters.append(embed)
         pages = Paginator(chapters)

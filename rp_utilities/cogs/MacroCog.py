@@ -276,9 +276,9 @@ class MacroCog(commands.Cog):
     )
     @app_commands.describe(prefix="Your macro prefix", args="Your macro new code")
     async def _macro_edit_code(self, ctx, prefix: str, args: str):
-        if not prefix.startswith("+>"):
+        if not prefix.startswith("+>") and not prefix.startswith("->"):
             embed = discord.Embed(
-                title="Macro edition failure", description="All macros starts with +>"
+                title="Macro edition failure", description="All macros starts with +> or ->"
             )
         else:
             executioner = await macros.exemac(
@@ -366,9 +366,9 @@ class MacroCog(commands.Cog):
         description="Allows you to delete a macro using their prefix",
     )
     @app_commands.describe(prefix="Your macro prefix")
-    async def _macro_create(self, ctx, prefix):
-        if not prefix.startswith("+>"):
-            await ctx.send("Your macro prefix shall start with +>")
+    async def _macro_delete(self, ctx, prefix):
+        if not prefix.startswith("+>") and not prefix.startswith("->"):
+            await ctx.send("Your macro prefix shall start with +> or ->")
         else:
             result = await ctx.bot.database.delete_macro(prefix=prefix, id=ctx.author.id)
             if result == "ERROR":
