@@ -217,57 +217,45 @@ def exeselect(args):
 ### ECHO MACRO ###
 ##################
 def exeecho(args):
+    print(f"{args = }")
     if len(args) == 1:
-        y = args
-        if isinstance(y, list):
-            while True:
-                print(f"{y = }")
-                if len(y) > 1:
-                    piv = ""
-                    for z in y:
-                        piv = piv + (
-                            z
-                            if z == y[-1] and isinstance(z, str)
-                            else (
-                                f"{z[1]}"
-                                if z == y[-1]
-                                else f" {z}" if isinstance(z, str) else f" {z[1]}"
-                            )
-                        )
-                    y = piv
-                if isinstance(y, str) or isinstance(y, float):
-                    break
-                y = y[0]
-
+        y = trim(args)
+        y = y.replace("\\n", "\n")
+        print(f"{y = }")
         pages = discord.Embed(description=y)
     else:
         chapters = list()
         for i in args:
-            y = i
-            if isinstance(y, list):
-                while True:
-                    print(f"{y = }")
-                    if len(y) > 1:
-                        piv = ""
-                        for z in y:
-                            piv = piv + (
-                                z
-                                if z == y[-1] and isinstance(z, str)
-                                else (
-                                    f"{z[1]}"
-                                    if z == y[-1]
-                                    else f" {z}" if isinstance(z, str) else f" {z[1]}"
-                                )
-                            )
-                        y = piv
-                    if isinstance(y, str) or isinstance(y, float):
-                        break
-                    y = y[0]
-
+            y = trim(i)
+            y = y.replace("\\n", "\n")
             embed = discord.Embed(description=y)
             chapters.append(embed)
         pages = Paginator(chapters)
     return pages
+
+
+###############
+### TRIMMER ###
+###############
+def trim(trimed):
+    if isinstance(trimed, list):
+        if len(trimed) > 1:
+            piv = ""
+            for z in trimed:
+                piv = piv + (
+                    z
+                    if z == trimed[-1] and isinstance(z, str)
+                    else (
+                        f"{z[1]}"
+                        if z == trimed[-1]
+                        else f" {z}" if isinstance(z, str) else f" {z[1]}"
+                    )
+                )
+            trimed = piv
+            return trimed
+        return trim(trimed[0])
+    else:
+        return trimed
 
 
 macro_grammar = Lark(
