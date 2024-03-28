@@ -27,6 +27,13 @@ class MacroCog(commands.Cog):
             prefix=checker, id=message.author.id if checker.startswith("+>") else message.guild.id
         )
 
+        if (
+            command["type"] == "server"
+            and not message.author.guild_permissions.administrator
+            and command["attribute"] != "public"
+        ):
+            return
+
         result = await macros.exemac(
             args=command["cmd"],
             database=self.client.database,
@@ -246,6 +253,15 @@ class MacroCog(commands.Cog):
                 title="Macro edition failure ❌",
                 description="You cannot change a user macro to server macro or a server macro to user macro",
             )
+        elif (
+            (old_prefix.startswith("->") or new_prefix.startswith("->"))
+            and ctx.guild is not None
+            and not ctx.author.guild_permissions.administrator
+        ):
+            embed = discord.Embed(
+                title="Macro creation failure ❌",
+                description="You don't have admin permissions to change a server macro prefix in this server",
+            )
         else:
             result = await ctx.bot.database.update_macro(
                 old_prefix=old_prefix, new_prefix=new_prefix, id=ctx.author.id
@@ -279,6 +295,15 @@ class MacroCog(commands.Cog):
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             embed = discord.Embed(
                 title="Macro edition failure", description="All macros starts with +> or ->"
+            )
+        elif (
+            prefix.startswith("->")
+            and ctx.guild is not None
+            and not ctx.author.guild_permissions.administrator
+        ):
+            embed = discord.Embed(
+                title="Macro creation failure ❌",
+                description="You don't have admin permissions change a server macro code",
             )
         else:
             executioner = await macros.exemac(
@@ -338,6 +363,11 @@ class MacroCog(commands.Cog):
             await ctx.send(
                 "Your macro attribute need to be or 'private' or 'public' or 'protected'"
             )
+        elif not ctx.author.guild_permissions.administrator:
+            embed = discord.Embed(
+                title="Macro creation failure ❌",
+                description="You don't have admin permissions to change the attribute of a server command",
+            )
         else:
             result = await ctx.bot.database.update_macro(
                 old_prefix=prefix, macro_attr=attr, id=ctx.guild.id
@@ -369,6 +399,15 @@ class MacroCog(commands.Cog):
     async def _macro_delete(self, ctx, prefix):
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             await ctx.send("Your macro prefix shall start with +> or ->")
+        elif (
+            prefix.startswith("->")
+            and ctx.guild is not None
+            and not ctx.author.guild_permissions.administrator
+        ):
+            embed = discord.Embed(
+                title="Macro creation failure ❌",
+                description="You don't have admin permissions to delete a server macro in this server",
+            )
         else:
             result = await ctx.bot.database.delete_macro(prefix=prefix, id=ctx.author.id)
             if result == "ERROR":

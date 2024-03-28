@@ -442,7 +442,8 @@ class Database:
                     return "SUCESS"
 
                 elif macro_attr:
-                    if result[0]["type"] == "server":
+                    print(f"{result = }")
+                    if result[0][4] == "server":
                         await self.db.execute(
                             "UPDATE macros SET attribute = ? WHERE belong_id = ?", (macro_attr, id)
                         )
