@@ -80,7 +80,7 @@ class MacroCog(commands.Cog):
             title="Macros Documentation",
             description="macros documentation: [Click Here](https://rp-utilities.gitbook.io/rp-utilities-macro-documentation 'Click to open documentation')\n",
         )
-        ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
     @_macro.command(
         name="search",
