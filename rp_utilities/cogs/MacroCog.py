@@ -72,6 +72,17 @@ class MacroCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @_macro.command(
+        name="docs",
+        description="Shows the link for macro documentation, it countains the tutorial for it",
+    )
+    async def _macro_docs(self, ctx):
+        embed = discord.Embed(
+            title="Macros Documentation",
+            description="macros documentation: [Click Here](https://rp-utilities.gitbook.io/rp-utilities-macro-documentation 'Click to open documentation')\n",
+        )
+        ctx.send(embed=embed)
+
+    @_macro.command(
         name="search",
         help="macro search",
         description="Allows you to search your macros like google, leave search in blank to get a list of commands",
@@ -204,7 +215,10 @@ class MacroCog(commands.Cog):
                 prefix.startswith("->"),
             )
             if isinstance(executioner, tuple):
-                embed = discord.Embed(title="Macro creation failure ❌", description=executioner[0])
+                embed = discord.Embed(
+                    title="Macro creation failure ❌",
+                    description=f"{executioner[0]}\nIf you are having difficulty use the command `/macro docs` to read the tutorial",
+                )
             else:
                 stored = await ctx.bot.database.register_macro(
                     prefix=prefix,
@@ -294,7 +308,8 @@ class MacroCog(commands.Cog):
     async def _macro_edit_code(self, ctx, prefix: str, args: str):
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             embed = discord.Embed(
-                title="Macro edition failure", description="All macros starts with +> or ->"
+                title="Macro creation failure ❌",
+                description="Your macro prefix shall start with +> or ->",
             )
         elif (
             prefix.startswith("->")
@@ -315,7 +330,10 @@ class MacroCog(commands.Cog):
                 prefix.startswith("->"),
             )
             if isinstance(executioner, tuple):
-                embed = discord.Embed(title="Macro edition failure ❌", description=executioner[0])
+                embed = discord.Embed(
+                    title="Macro edition failure ❌",
+                    description=f"{executioner[0]}\nIf you are having difficulty use the command `/macro docs` to read the tutorial",
+                )
             else:
                 result = await ctx.bot.database.update_macro(
                     old_prefix=prefix, args=args, id=ctx.author.id
@@ -398,7 +416,10 @@ class MacroCog(commands.Cog):
     @app_commands.describe(prefix="Your macro prefix")
     async def _macro_delete(self, ctx, prefix):
         if not prefix.startswith("+>") and not prefix.startswith("->"):
-            await ctx.send("Your macro prefix shall start with +> or ->")
+            embed = discord.Embed(
+                title="Macro creation failure ❌",
+                description="Your macro prefix shall start with +> or ->",
+            )
         elif (
             prefix.startswith("->")
             and ctx.guild is not None

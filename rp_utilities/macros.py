@@ -285,19 +285,19 @@ macro_grammar = Lark(
 
     comparator.3: command2 " " comparator_indx
     comparator_indx: major | minor | equalmajor | equalminor | different | equal | inlist
-    major: ">" (content | number | command2 | sub_command | listing)
-    minor: "<" (content | number | command2 | sub_command | listing)
-    equalmajor: ">=" (content | number | command2 | sub_command | listing)
-    equalminor: "<=" (content | number | command2 | sub_command | listing)
-    different: "!=" (content | number | command2 | sub_command | listing)
-    equal: "==" (content | number | command2 | sub_command | listing)
-    inlist: "in" (content | number | command2 | sub_command | listing)
+    major: ">" (content | number | command2 | execute | listing)
+    minor: "<" (content | number | command2 | execute | listing)
+    equalmajor: ">=" (content | number | command2 | execute | listing)
+    equalminor: "<=" (content | number | command2 | execute | listing)
+    different: "!=" (content | number | command2 | execute | listing)
+    equal: "==" (content | number | command2 | execute | listing)
+    inlist: "in" (content | number | command2 | execute | listing)
 
     use_var.2: "&" INT
     sub_command: string
     content.5: string? (key_cont string?)*
     content2.5: args? (key_cont args?)*
-    key_cont.5: "{" (use_var | sub_command | command2) "}"
+    key_cont.5: "{" (use_var | execute | command2) "}"
     finput: "[" (("(" content ")" ("," "(" content ")")*) | content) "]"
 
     string: CHAR_CHAIN+
