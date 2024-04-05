@@ -227,6 +227,7 @@ def exeecho(args):
         chapters = list()
         for i in args:
             y = trim(i)
+            print(f"{y = }")
             y = y.replace("\\n", "\n")
             embed = discord.Embed(description=y)
             chapters.append(embed)
@@ -242,20 +243,26 @@ def trim(trimed):
         if len(trimed) > 1:
             piv = ""
             for z in trimed:
-                piv = piv + (
-                    z
-                    if z == trimed[-1] and isinstance(z, str)
-                    else (
-                        f"{z[1]}"
-                        if z == trimed[-1]
-                        else f" {z}" if isinstance(z, str) else f" {z[1]}"
-                    )
-                )
+                if z == trimed[-1] and isinstance(z, discord.Embed):
+                    piv = piv + str(z.description)
+                elif isinstance(z, discord.Embed):
+                    piv = piv + f" {z.description}"
+                elif z == trimed[-1] and (isinstance(z, str) or isinstance(z, float)):
+                    piv = piv + str(z)
+                elif z == trimed[-1]:
+                    piv = piv + f"{z[1]}"
+                elif isinstance(z, str) or isinstance(z, float):
+                    piv = piv + f" {z}"
+                else:
+                    piv = piv + f" {z[1]}"
             trimed = piv
             return trimed
         return trim(trimed[0])
     else:
-        return trimed
+        if isinstance(trimed, discord.Embed):
+            return trimed.description
+        else:
+            return trimed
 
 
 macro_grammar = Lark(
@@ -324,34 +331,114 @@ macro_grammar = Lark(
 )
 
 
-class Compiler(Transformer):
-    def chain_command(self, macro):
+class AsyncTransformer(Transformer):
+    """Async variant of a Lark Transformer.  For calling coroutines."""
+
+    __visit_tokens__ = True  # For backwards compatibility
+
+    def __init__(self, macrocache: dict, visit_tokens: bool = True) -> None:
+        self.__visit_tokens__ = visit_tokens
+        self.macrocache = macrocache
+
+    async def _call_userfunc(self, tree, new_children=None):
+        # Assumes tree is already transformed
+        children = new_children if new_children is not None else tree.children
+        try:
+            f = getattr(self, tree.data)
+        except AttributeError:
+            return await self.__default__(tree.data, children, tree.meta)
+        else:
+            try:
+                wrapper = getattr(f, "visit_wrapper", None)
+                if wrapper is not None:
+                    return await f.visit_wrapper(f, tree.data, children, tree.meta)
+                else:
+                    return await f(children)
+            except lark.exceptions.GrammarError:
+                raise
+            except Exception as e:
+                raise lark.exceptions.VisitError(tree.data, tree, e)
+
+    async def _call_userfunc_token(self, token):
+        try:
+            f = getattr(self, token.type)
+        except AttributeError:
+            return await self.__default_token__(token)
+        else:
+            try:
+                print("Calling userfunc token.")
+                return await f(token)
+            except lark.exceptions.GrammarError:
+                raise
+            except Exception as e:
+                raise lark.exceptions.VisitError(token.type, token, e)
+
+    async def _transform_children(self, children):
+        for c in children:
+            if isinstance(c, lark.Tree):
+                res = await self._transform_tree(c)
+            elif self.__visit_tokens__ and isinstance(c, lark.Token):
+                res = await self._call_userfunc_token(c)
+            else:
+                res = c
+
+            if res is not lark.visitors.Discard:
+                yield res
+
+    async def _transform_tree(self, tree):
+        children = []
+        async for c in self._transform_children(tree.children):
+            children.append(c)
+        return await self._call_userfunc(tree, children)
+
+    async def transform(self, tree: lark.Tree) -> lark.Tree:
+        "Transform the given tree, and return the final result"
+        return await self._transform_tree(tree)
+
+    async def __default__(self, data, children, meta):
+        """Default function that is called if there is no attribute matching ``data``
+
+        Can be overridden. Defaults to creating a new copy of the tree node (i.e. ``return Tree(data, children, meta)``)
+        """
+        return lark.Tree(data, children, meta)
+
+    async def __default_token__(self, token):
+        """Default function that is called if there is no attribute matching ``token.type``
+
+        Can be overridden. Defaults to returning the token as-is.
+        """
+        return token
+
+
+class Compiler(AsyncTransformer):
+    async def chain_command(self, macro):
         chain_cmd = list()
         for i in macro:
             if i != " ":
                 chain_cmd.append(i)
         return chain_cmd
 
-    def command4(self, cmd):
+    async def command4(self, cmd):
         (cmd4,) = cmd
         return cmd4
 
-    def command3(self, cmd):
+    async def command3(self, cmd):
         (cmd3,) = cmd
         return cmd3
 
-    def command2(self, cmd):
+    async def command2(self, cmd):
         (cmd2,) = cmd
         return cmd2
 
-    def command(self, cmd):
+    async def command(self, cmd):
         (cmd,) = cmd
         return cmd
 
-    def execute(self, cmd):
+    async def execute(self, cmd):
+        print(cmd)
         return cmd
 
-    def math(self, cmd):
+    async def math(self, cmd):
         m = cmd
 
         if len(cmd) > 1:
@@ -361,37 +448,82 @@ class Compiler(Transformer):
 
         while True:
             m = m[0]
+            if len(m) > 1:
+                piv = ""
+                for i in m:
+                    if i == m[-1]:
+                        if isinstance(i, list):
+                            if len[i] > 1:
+                                piv = piv + str(i[1])
+                            else:
+                                piv = piv + str(i[0])
+                        else:
+                            piv = piv + str(i)
+                    else:
+                        if isinstance(i, list):
+                            if len(i) > 1:
+                                piv = piv + f" {str(i[1])}"
+                            else:
+                                piv = piv + f" {str(i[0])}"
+                        else:
+                            piv = piv + f" {str(i)}"
+                    m = piv
             if isinstance(m, str):
                 break
+
         result = exemath(args=m, res_type=opt)
         return result
 
-    def select(self, cmd):
+    async def select(self, cmd):
         sl = cmd[0]
         result = exeselect(sl)
         return result
 
-    def roll(self, cmd):
+    async def roll(self, cmd):
+        print(f"{cmd = }")
         rl = cmd
+        print(f"{rl = }")
 
         if len(cmd) > 1:
             opt = cmd[1]
         else:
             opt = "all"
-
         while True:
             rl = rl[0]
+            if len(rl) > 1:
+                piv = ""
+                for i in rl:
+                    if i == rl[-1]:
+                        if isinstance(i, list):
+                            if len[i] > 1:
+                                piv = piv + str(i[1])
+                            else:
+                                piv = piv + str(i[0])
+                        else:
+                            piv = piv + str(i)
+                    else:
+                        if isinstance(i, list):
+                            if len(i) > 1:
+                                piv = piv + f" {str(i[1])}"
+                            else:
+                                piv = piv + f" {str(i[0])}"
+                        else:
+                            piv = piv + f" {str(i)}"
+                rl = piv
             if isinstance(rl, str):
                 break
+
+        print(f"{rl = }")
+
         result = exeroll(args=rl, res_type=opt)
         return [result]
 
-    def echo(self, cmd):
+    async def echo(self, cmd):
         ec = cmd[0]
         prompt = exeecho(ec)
         return [prompt]
 
-    def fif(self, cmd):
+    async def fif(self, cmd):
         cases = cmd
         if cases[1]:
             case = cases[0]
@@ -408,11 +540,11 @@ class Compiler(Transformer):
             case = case[0]
         return [case]
 
-    def felse(self, cmd):
+    async def felse(self, cmd):
         result = cmd
         return [result]
 
-    def fif2(self, cmd):
+    async def fif2(self, cmd):
         cases = cmd
         if cases[1]:
             case = cases[0]
@@ -429,11 +561,11 @@ class Compiler(Transformer):
             case = case[0]
         return [case]
 
-    def felse2(self, cmd):
+    async def felse2(self, cmd):
         result = cmd
         return [result]
 
-    def comparator(self, cmd):
+    async def comparator(self, cmd):
         comp1 = cmd[0]
         comp2 = cmd[1]
         while True:
@@ -502,7 +634,7 @@ class Compiler(Transformer):
             else:
                 return False
 
-    def comparator_indx(self, cmd):
+    async def comparator_indx(self, cmd):
         (cindx,) = cmd
         try:
             cindx[1] = float(cindx[1])
@@ -510,7 +642,7 @@ class Compiler(Transformer):
         except:
             return cindx
 
-    def major(self, cmd):
+    async def major(self, cmd):
         index = cmd
         while True:
             index = index[0]
@@ -519,7 +651,7 @@ class Compiler(Transformer):
 
         return [">", index]
 
-    def minor(self, cmd):
+    async def minor(self, cmd):
         index = cmd
         while True:
             index = index[0]
@@ -528,7 +660,7 @@ class Compiler(Transformer):
 
         return ["<", index]
 
-    def equalmajor(self, cmd):
+    async def equalmajor(self, cmd):
         index = cmd
         while True:
             index = index[0]
@@ -537,7 +669,7 @@ class Compiler(Transformer):
 
         return [">=", index]
 
-    def equalminor(self, cmd):
+    async def equalminor(self, cmd):
         index = cmd
         while True:
             index = index[0]
@@ -546,7 +678,7 @@ class Compiler(Transformer):
 
         return [">=", index]
 
-    def equal(self, cmd):
+    async def equal(self, cmd):
         index = cmd
         while True:
             index = index[0]
@@ -555,7 +687,7 @@ class Compiler(Transformer):
 
         return ["==", index]
 
-    def different(self, cmd):
+    async def different(self, cmd):
         index = cmd
         while True:
             index = index[0]
@@ -564,7 +696,7 @@ class Compiler(Transformer):
 
         return ["!=", index]
 
-    def inlist(self, cmd):
+    async def inlist(self, cmd):
         index = cmd
         while True:
             index = index[0]
@@ -573,29 +705,39 @@ class Compiler(Transformer):
 
         return ["in", index]
 
-    def variable(self, cmd):
+    async def variable(self, cmd):
         var = cmd
         variables.append(var)
         return var
 
-    def use_var(self, cmd):
+    async def use_var(self, cmd):
         var_pos = int(cmd[0])
         use_var = variables[var_pos]
         return use_var
 
-    def sub_command(self, cmd):
-        if not cmd.startswith("+>") and not cmd.startswith("->"):
+    async def sub_command(self, cmd):
+        acesscmd = cmd[0]
+        if not acesscmd.startswith("+>") and not acesscmd.startswith("->"):
             raise BadStartingException()
 
-        scmd = cmd
-        database = macrocache["database"]
+        scmd = acesscmd
+        database = self.macrocache["database"]
 
-        command = database.quick_search_macro(prefix=scmd, id=macrocache["author_id"])
-        if command == "ERROR":
-            command = database.quick_search_macro(prefix=scmd, id=macrocache["guild_id"])
+        print(f"{scmd = }")
 
-        guild = macrocache["bot"].get_guild(int(macrocache["guild_id"]))
-        member = guild.get_member(int(macrocache["author_id"]))
+        command = await database.quick_search_macro(prefix=scmd, id=self.macrocache["author_id"])
+
+        if command is None:
+            command = await database.quick_search_macro(prefix=scmd, id=self.macrocache["guild_id"])
+
+        print(f"{macrocache['guild_id'] = }")
+        print(f"{macrocache['author_id'] = }")
+
+        guild = macrocache["bot"].get_guild(int(self.macrocache["guild_id"]))
+        member = guild.get_member(int(self.macrocache["author_id"]))
+
+        print(f"{guild = }")
+        print(f"{member = }")
 
         if command == "ERROR":
             raise NonExistantMacro(scmd)
@@ -607,30 +749,42 @@ class Compiler(Transformer):
             ):
                 raise IllegalCommandParse(scmd)
             else:
-                result = Compiler().transform(macro_grammar.parse(command["cmd"]))
+                result = await Compiler(self.macrocache).transform(
+                    macro_grammar.parse(command["cmd"])
+                )
                 return result
 
-    def content(self, cmd):
+    async def content(self, cmd):
         cnt = cmd
         return [cnt]
 
-    def content2(self, cmd):
+    async def content2(self, cmd):
         cnt = cmd
         return [cnt]
 
-    def expression(self, cmd):
+    async def expression(self, cmd):
         (exp,) = cmd
         return exp
 
-    def key_cont(self, cmd):
-        kcont = cmd[0][0]
-        return kcont
+    async def key_cont(self, cmd):
+        print(f"{cmd = }")
+        kcont = cmd
+        if isinstance(kcont, list):
+            while True:
+                print(f"{kcont = }")
+                if not isinstance(kcont, list):
+                    break
+                kcont = kcont[0]
+        if isinstance(kcont, float):
+            return float(kcont)
+        else:
+            return kcont
 
-    def finput(self, cmd):
+    async def finput(self, cmd):
         (inp,) = [cmd]
         return inp
 
-    def string(self, cmd):
+    async def string(self, cmd):
         command_string = str()
         for i in range(0, len(cmd)):
             if i == 0:
@@ -639,11 +793,11 @@ class Compiler(Transformer):
                 command_string += " " + cmd[i]
         return command_string
 
-    def args(self, cmd):
+    async def args(self, cmd):
         math_arguments = cmd
         return math_arguments
 
-    def showtype(self, cmd):
+    async def showtype(self, cmd):
         num = int(cmd[0])
         if num == 0:
             return "all"
@@ -652,7 +806,7 @@ class Compiler(Transformer):
         elif num == 2:
             return "only_result"
 
-    def ws(self, cmd):
+    async def ws(self, cmd):
         return None
 
 
@@ -671,9 +825,10 @@ async def exemac(args, database, guild_id, author_id, bot, starter):
     macrocache["start with ->"] = starter
 
     try:
+        print(f"{args = }")
         grammar_compilation = macro_grammar.parse(args)
 
-        cmd = Compiler().transform(grammar_compilation)
+        cmd = await Compiler(macrocache).transform(grammar_compilation)
 
         # variables.clear()
 
