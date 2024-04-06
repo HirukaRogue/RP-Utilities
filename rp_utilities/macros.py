@@ -240,6 +240,7 @@ def exeecho(args):
 ###############
 def trim(trimed):
     if isinstance(trimed, list):
+        print(f"{trimed = }")
         if len(trimed) > 1:
             piv = ""
             for z in trimed:
@@ -247,14 +248,14 @@ def trim(trimed):
                     piv = piv + str(z.description)
                 elif isinstance(z, discord.Embed):
                     piv = piv + f" {z.description}"
-                elif z == trimed[-1] and (isinstance(z, str) or isinstance(z, float)):
-                    piv = piv + str(z)
-                elif z == trimed[-1]:
+                elif z == trimed[-1] and isinstance(z, list):
                     piv = piv + f"{z[1]}"
-                elif isinstance(z, str) or isinstance(z, float):
-                    piv = piv + f" {z}"
-                else:
+                elif z == trimed[-1]:
+                    piv = piv + str(z)
+                elif isinstance(z, list):
                     piv = piv + f" {z[1]}"
+                else:
+                    piv = piv + f" {z}"
             trimed = piv
             return trimed
         return trim(trimed[0])
@@ -521,6 +522,7 @@ class Compiler(AsyncTransformer):
     async def echo(self, cmd):
         ec = cmd[0]
         prompt = exeecho(ec)
+        print(f"{prompt = }")
         return [prompt]
 
     async def fif(self, cmd):
