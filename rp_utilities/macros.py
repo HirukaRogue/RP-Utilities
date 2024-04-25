@@ -258,7 +258,7 @@ async def trim(trimed):
                     piv = piv + f" {z}"
             trimed = piv
             return trimed
-        return trim(trimed[0])
+        return await trim(trimed[0])
     else:
         if isinstance(trimed, discord.Embed):
             return trimed.description
