@@ -22,7 +22,11 @@ async def mathematic(string):
     calculation = f"""
 import sympy
 
-print(sympy.sympify({string}))
+try:
+    result = sympy.sympify("{string}")
+except:
+    result = "Invalid Arguments"
+print(result)
     """
     calculator = File(calculation, filename="calculator.py")
     sandbox = PystonClient()
