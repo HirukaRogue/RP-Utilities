@@ -1,7 +1,7 @@
 import traceback
 import random
 import lark
-from .miscellaneous import mathematic
+from sympy import sympify
 import re
 from lark import Lark, Transformer
 import discord
@@ -138,7 +138,7 @@ async def calculate(indice, store):
 
             expression = expression + f"{indice[i]}"
 
-    sub_total = mathematic(expression)
+    sub_total = sympify(expression)
 
     return sub_total
 
@@ -194,7 +194,7 @@ async def sub_roll(inp):
 ### MATH MACRO ###
 ##################
 async def exemath(args: str, res_type: str):
-    result = mathematic(args)
+    result = sympify(args)
     result_string = f"{args} = {result}"
     if res_type == "only_result":
         return result
