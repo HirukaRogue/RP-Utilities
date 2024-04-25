@@ -3,9 +3,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from pagination import Paginator
-from milascenous import is_link
-from milascenous import unify
+from ..pagination import Paginator
+from ..miscellaneous import is_link
+from ..miscellaneous import unify
 
 from copy import deepcopy
 

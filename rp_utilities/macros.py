@@ -1,17 +1,17 @@
 import traceback
 import random
 import lark
-from sympy import sympify
+from .miscellaneous import mathematic
 import re
 from lark import Lark, Transformer
 import discord
-from pagination import Paginator
+from .pagination import Paginator
 
 
 ##################
 ### ROLL MACRO ###
 ##################
-def exeroll(args, res_type: str):
+async def exeroll(args, res_type: str):
     # define boolean see if the code will work or not
     not_failure = True
     # start to make the roll
@@ -71,7 +71,7 @@ def exeroll(args, res_type: str):
                     else:
                         resp_sub = resp_sub + f"{x}"
                     if x:
-                        roll_result = sub_roll(x)
+                        roll_result = await sub_roll(x)
                         if not resp_sub:
                             resp_sub = f"{x}"
                             for roll_index in roll_result[0]:
@@ -84,7 +84,7 @@ def exeroll(args, res_type: str):
                             store.append(roll_result[1])
                     else:
                         store.append(x)
-                sub_total = calculate(indice, store)
+                sub_total = await calculate(indice, store)
                 store.clear()
                 total = total + sub_total
                 resp_sub = resp_sub + f"<[{sub_total}]>" + "\n"
@@ -96,7 +96,7 @@ def exeroll(args, res_type: str):
                 if indx > 0:
                     resp_sub = resp_sub + f"{indice[indx - 1]} {x}"
                 if x:
-                    roll_result = sub_roll(x)
+                    roll_result = await sub_roll(x)
                     if not resp_sub:
                         resp_sub = f"{x}"
                         for roll_index in roll_result[0]:
@@ -111,7 +111,7 @@ def exeroll(args, res_type: str):
                     store.append(x)
 
             # the total will be cauculated by the calculate function
-            total = calculate(indice, store)
+            total = await calculate(indice, store)
 
         # resp_total will be the output of the roll
         resp_total = f"```\n{resp_sub}\n```\n:game_die: **__Total__** = {total}"
@@ -125,7 +125,7 @@ def exeroll(args, res_type: str):
         return "ERROR!"
 
 
-def calculate(indice, store):
+async def calculate(indice, store):
     sub_total = 0
     expression = ""
     for i in range(0, len(store)):
@@ -138,12 +138,12 @@ def calculate(indice, store):
 
             expression = expression + f"{indice[i]}"
 
-    sub_total = sympify(expression)
+    sub_total = mathematic(expression)
 
     return sub_total
 
 
-def sub_roll(inp):
+async def sub_roll(inp):
     # This function will make thje rollings
     # result will be the rolls result, total will be the sum of the results
     # and meta will be results and total stored as metadata
@@ -193,8 +193,8 @@ def sub_roll(inp):
 ##################
 ### MATH MACRO ###
 ##################
-def exemath(args: str, res_type: str):
-    result = sympify(args)
+async def exemath(args: str, res_type: str):
+    result = mathematic(args)
     result_string = f"{args} = {result}"
     if res_type == "only_result":
         return result
@@ -207,7 +207,7 @@ def exemath(args: str, res_type: str):
 ####################
 ### SELECT MACRO ###
 ####################
-def exeselect(args):
+async def exeselect(args):
     number = len(args) - 1
     selected = args[random.randint(0, number)]
     return selected
@@ -216,17 +216,17 @@ def exeselect(args):
 ##################
 ### ECHO MACRO ###
 ##################
-def exeecho(args):
+async def exeecho(args):
     print(f"{args = }")
     if len(args) == 1:
-        y = trim(args)
+        y = await trim(args)
         y = y.replace("\\n", "\n")
         print(f"{y = }")
         pages = discord.Embed(description=y)
     else:
         chapters = list()
         for i in args:
-            y = trim(i)
+            y = await trim(i)
             print(f"{y = }")
             y = y.replace("\\n", "\n")
             embed = discord.Embed(description=y)
@@ -238,7 +238,7 @@ def exeecho(args):
 ###############
 ### TRIMMER ###
 ###############
-def trim(trimed):
+async def trim(trimed):
     if isinstance(trimed, list):
         print(f"{trimed = }")
         if len(trimed) > 1:
@@ -472,12 +472,12 @@ class Compiler(AsyncTransformer):
             if isinstance(m, str):
                 break
 
-        result = exemath(args=m, res_type=opt)
+        result = await exemath(args=m, res_type=opt)
         return result
 
     async def select(self, cmd):
         sl = cmd[0]
-        result = exeselect(sl)
+        result = await exeselect(sl)
         return result
 
     async def roll(self, cmd):
@@ -516,12 +516,12 @@ class Compiler(AsyncTransformer):
 
         print(f"{rl = }")
 
-        result = exeroll(args=rl, res_type=opt)
+        result = await exeroll(args=rl, res_type=opt)
         return [result]
 
     async def echo(self, cmd):
         ec = cmd[0]
-        prompt = exeecho(ec)
+        prompt = await exeecho(ec)
         print(f"{prompt = }")
         return [prompt]
 
@@ -708,12 +708,39 @@ class Compiler(AsyncTransformer):
         return ["in", index]
 
     async def variable(self, cmd):
+        print("Registering variable")
         var = cmd
-        variables.append(var)
+        while True:
+            var = var[0]
+            if len(var) > 1:
+                piv = ""
+                for i in var:
+                    if i == var[-1]:
+                        if isinstance(i, list):
+                            if len[i] > 1:
+                                piv = piv + str(i[1])
+                            else:
+                                piv = piv + str(i[0])
+                        else:
+                            piv = piv + str(i)
+                    else:
+                        if isinstance(i, list):
+                            if len(i) > 1:
+                                piv = piv + f" {str(i[1])}"
+                            else:
+                                piv = piv + f" {str(i[0])}"
+                        else:
+                            piv = piv + f" {str(i)}"
+                    var = piv
+            if isinstance(var, str):
+                break
+        await macrocache["database"].cache_register(id=macrocache["author_id"], var=var)
         return var
 
     async def use_var(self, cmd):
+        print("Gathering Variable")
         var_pos = int(cmd[0])
+        variables = await macrocache["database"].get_cache(id=macrocache["author_id"])
         use_var = variables[var_pos]
         return use_var
 
@@ -812,10 +839,6 @@ class Compiler(AsyncTransformer):
         return None
 
 
-#### Variables ####
-variables = list()
-
-
 ##########################
 ###   MACRO EXECUTER   ###
 ##########################
@@ -832,7 +855,7 @@ async def exemac(args, database, guild_id, author_id, bot, starter):
 
         cmd = await Compiler(macrocache).transform(grammar_compilation)
 
-        # variables.clear()
+        macrocache["database"].clear_cache(id=macrocache["author_id"])
 
         return cmd
     except lark.LarkError:

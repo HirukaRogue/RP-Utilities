@@ -1,10 +1,13 @@
+[tool.poetry.scripts]
+main = "rp_utilities.__main__:main"
+
 [tool.poetry]
 name = "rp-utilities"
 version = "0.1.0"
 description = ""
 authors = ["HirukaRogue <140905381+HirukaRogue@users.noreply.github.com>"]
 readme = "README.md"
-packages = [{include = "rp-utilities"}]
+packages = [{include = "rp_utilities"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -16,6 +19,7 @@ jishaku = "^2.5.2"
 pyright = "^1.1.347"
 lark = "^1.1.9"
 aiosqlite = "^0.20.0"
+aiopyston = "^1.2.1"
 
 
 [tool.poetry.group.dev.dependencies]

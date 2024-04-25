@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import random
-from sympy import sympify
+from ..miscellaneous import mathematic
 import re
 
 
@@ -72,7 +72,7 @@ class RollCog(commands.Cog):
                         else:
                             resp_sub = resp_sub + f"{x}"
                         if x:
-                            roll_result = self.sub_roll(x)
+                            roll_result = await self.sub_roll(x)
                             if not resp_sub:
                                 resp_sub = f"{x}"
                                 for roll_index in roll_result[0]:
@@ -85,7 +85,7 @@ class RollCog(commands.Cog):
                                 store.append(roll_result[1])
                         else:
                             store.append(x)
-                    sub_total = self.calculate(indice, store)
+                    sub_total = await self.calculate(indice, store)
                     store.clear()
                     total = total + sub_total
                     resp_sub = resp_sub + f"<[{sub_total}]>" + "\n"
@@ -97,7 +97,7 @@ class RollCog(commands.Cog):
                     if indx > 0:
                         resp_sub = resp_sub + f"{indice[indx-1]} {x}"
                     if x:
-                        roll_result = self.sub_roll(x)
+                        roll_result = await self.sub_roll(x)
                         if not resp_sub:
                             resp_sub = f"{x}"
                             for roll_index in roll_result[0]:
@@ -112,7 +112,7 @@ class RollCog(commands.Cog):
                         store.append(x)
 
                 # the total will be cauculated by the calculate function
-                total = self.calculate(indice, store)
+                total = await self.calculate(indice, store)
 
             # resp_total will be the output of the roll
             resp_total = f"```\n{resp_sub}\n```\n:game_die: **__Total__** = {total}"
@@ -130,6 +130,7 @@ class RollCog(commands.Cog):
     )
     @app_commands.describe(args="set the arguments of dice roll, like 1d20+5")
     async def roll_slash(self, interaction: discord.Interaction, args: str):
+        await interaction.response.defer(thinking=True)
         # define boolean see if the code will work or not
         not_failure = True
         # start to make the roll
@@ -195,7 +196,7 @@ class RollCog(commands.Cog):
                         else:
                             resp_sub = resp_sub + f"{x}"
                         if x:
-                            roll_result = self.sub_roll(x)
+                            roll_result = await self.sub_roll(x)
                             if not resp_sub:
                                 resp_sub = f"{x}"
                                 for roll_index in roll_result[0]:
@@ -208,7 +209,7 @@ class RollCog(commands.Cog):
                                 store.append(roll_result[1])
                         else:
                             store.append(x)
-                    sub_total = self.calculate(indice, store)
+                    sub_total = await self.calculate(indice, store)
                     store.clear()
                     total = total + sub_total
                     resp_sub = resp_sub + f"<[{sub_total}]>" + "\n"
@@ -220,7 +221,7 @@ class RollCog(commands.Cog):
                     if indx > 0:
                         resp_sub = resp_sub + f"{indice[indx-1]} {x}"
                     if x:
-                        roll_result = self.sub_roll(x)
+                        roll_result = await self.sub_roll(x)
                         if not resp_sub:
                             resp_sub = f"{x}"
                             for roll_index in roll_result[0]:
@@ -235,15 +236,15 @@ class RollCog(commands.Cog):
                         store.append(x)
 
                 # the total will be cauculated by the calculate function
-                total = self.calculate(indice, store)
+                total = await self.calculate(indice, store)
 
             # resp_total will be the output of the roll
             resp_total = f"```\n{resp_sub}\n```\n:game_die: **__Total__** = {total}"
             embed = discord.Embed(title="Roll Result", description=resp_total)
 
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
 
-    def calculate(self, indice, store):
+    async def calculate(self, indice, store):
         sub_total = 0
         expression = ""
         for i in range(0, len(store)):
@@ -256,11 +257,11 @@ class RollCog(commands.Cog):
 
                 expression = expression + f"{indice[i]}"
 
-        sub_total = sympify(expression)
+        sub_total = await mathematic(expression)
 
         return sub_total
 
-    def sub_roll(self, inp):
+    async def sub_roll(self, inp):
         # This function will make thje rollings
         # result will be the rolls result, total will be the sum of the results
         # and meta will be results and total stored as metadata

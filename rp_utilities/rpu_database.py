@@ -42,6 +42,13 @@ CREATE TABLE IF NOT EXISTS macros (
     )
 """
 
+MACRO_CACHE = """
+CREATE TABLE IF NOT EXISTS macro_cache (
+    id INT,
+    cache TEXT
+    )
+"""
+
 
 class Database:
 
@@ -53,6 +60,7 @@ class Database:
         await self.db.execute(WEBHOOK_LOG_TABLE)
         await self.db.execute(DEFAULT_CHARACTER_TABLE)
         await self.db.execute(MACRO_TABLE)
+        await self.db.execute(MACRO_CACHE)
         await self.db.commit()
 
         print("Database connected!")
@@ -478,3 +486,47 @@ class Database:
             return "SUCESS"
         else:
             return "ERROR"
+
+    ### MACRO CACHE ###
+    # To manage variables in macros, cache is important to increase the way of how macros are used
+
+    # All those functions will register, catch and clear the cache
+    async def cache_register(self, *, id: int, var: str):
+        cursor = await self.db.execute("SELECT cache FROM macro_cache WHERE id = ?", (id,))
+        result = await cursor.fetchone()
+
+        if result is not None:
+            cache = result[0]
+        else:
+            cache = ""
+
+        if cache == "":
+            cache = var
+        else:
+            cache = cache + var
+
+        print("cache register Executed")
+
+        await self.db.execute(
+            "INSERT INTO macro_cache (id, var) VALUES (?, ?)",
+            (id, var),
+        )
+        await self.db.commit()
+
+    async def get_cache(self, *, id: int):
+        cursor = await self.db.execute("SELECT cache FROM macro_cache WHERE id = ?", (id,))
+        result = await cursor.fetchone()
+
+        if result is not None:
+            cache = result[0]
+        else:
+            cache = None
+
+        return cache
+
+    async def clear_cache(self, *, id: int):
+        cursor = await self.db.execute("SELECT cache FROM macro_cache WHERE id = ?", (id,))
+
+        if cursor is not None:
+            await self.db.execute("DELETE FROM cache WHERE id = ?", (id))
+            await self.db.commit()

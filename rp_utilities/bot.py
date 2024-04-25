@@ -1,17 +1,15 @@
-import bot_token
+from rp_utilities import bot_token
 import discord
 from discord.ext import commands
 import os
-from rpu_database import Database
+from .rpu_database import Database
 import logging
+from .cogs import EXTENSIONS
 
 handler = logging.FileHandler(filename="rpu_log.log", encoding="utf-8", mode="w")
 
 bot_status = ["initializing", "active", "shutting down"]
 DEFAULT_PREFIX = "rpu->"
-EXTENSIONS = [
-    "jishaku",
-]
 INTENTS = discord.Intents.default()
 INTENTS.message_content = True
 INTENTS.members = True
@@ -30,12 +28,11 @@ class Bot(commands.Bot):
 
     async def setup_hook(self) -> None:
         await self.database.connect()
+        await self.load_extension("jishaku")
+        print(f"{EXTENSIONS = }")
         for extension in EXTENSIONS:
             await self.load_extension(extension)
         await self.add_cog(PrefixCog(self))
-        for filename in os.listdir("rp_utilities/cogs"):
-            if filename.endswith(".py"):
-                await self.load_extension(f"cogs.{filename[:-3]}")
         await self.tree.sync()
 
     # async def close(self) -> None:

@@ -1,3 +1,5 @@
-import bot
+from . import bot
 
-bot.run_bot()
+
+def main():
+    bot.run_bot()
