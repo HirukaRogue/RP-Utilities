@@ -413,11 +413,16 @@ class AsyncTransformer(Transformer):
 
 class Compiler(AsyncTransformer):
     async def chain_command(self, macro):
-        chain_cmd = list()
-        for i in macro:
-            if i != " ":
-                chain_cmd.append(i)
-        return chain_cmd
+        try:
+            chain_cmd = list()
+            for i in macro:
+                if i != " ":
+                    chain_cmd.append(i)
+            return chain_cmd
+        except (lark.UnexpectedCharacters, lark.LarkError) as error:
+            indicator = error.get_context(macro, len(macro))
+            print(error.__traceback__)
+            raise CompilationIncompatibility(indicator)
 
     async def command4(self, cmd):
         (cmd4,) = cmd
@@ -747,7 +752,7 @@ class Compiler(AsyncTransformer):
     async def sub_command(self, cmd):
         acesscmd = cmd[0]
         if not acesscmd.startswith("+>") and not acesscmd.startswith("->"):
-            raise BadStartingException()
+            raise BadStartingException(acesscmd)
 
         scmd = acesscmd
         database = self.macrocache["database"]
@@ -843,6 +848,7 @@ class Compiler(AsyncTransformer):
 ###   MACRO EXECUTER   ###
 ##########################
 async def exemac(args, database, guild_id, author_id, bot, starter):
+    macrocache["command"] = args
     macrocache["database"] = database
     macrocache["guild_id"] = guild_id
     macrocache["author_id"] = author_id
@@ -851,16 +857,21 @@ async def exemac(args, database, guild_id, author_id, bot, starter):
 
     try:
         print(f"{args = }")
-        grammar_compilation = macro_grammar.parse(args)
+        try:
+            grammar_compilation = macro_grammar.parse(args)
+        except (lark.UnexpectedCharacters, lark.LarkError) as error:
+            indicator = error.get_context(args)
+            print(error.__traceback__)
+            raise InvalidCharacter(indicator)
 
         cmd = await Compiler(macrocache).transform(grammar_compilation)
 
         macrocache["database"].clear_cache(id=macrocache["author_id"])
 
         return cmd
-    except lark.LarkError:
-        traceback.print_exc()
-        return ("ERROR",)
+    except Exception as e:
+        print(e)
+        return (e,)
 
 
 #################
@@ -880,9 +891,12 @@ macrocache = dict()
 ### Private Macro Exception ###
 class IllegalCommandParse(Exception):
     def __init__(self, macro) -> None:
-        self.message = f"""server private macro can only be used on another server private macros or you don't have admin permissions to use the macro, please update the macro to public or protected
-macro prefix: {macro}        
-"""
+        string = macrocache["command"]
+        string.replace(f"!exe {macro}", f"!exe ***{macro}***")
+        self.message = (
+            string
+            + "server private macros can only be used on another server private macros or you don't have admin permissions to use the macro, please update the macro to public or protected"
+        )
 
         super().__init__(self.message)
 
@@ -890,14 +904,64 @@ macro prefix: {macro}
 ### Non-Existant Macro Exception ###
 class NonExistantMacro(Exception):
     def __init__(self, macro) -> None:
-        self.message = f"The macro {macro} don't exist"
+        string = macrocache["command"]
+        string.replace(f"!exe {macro}", f"!exe ***{macro}***")
+        self.message = string + "\nThi macro don't exist"
 
         super().__init__(self.message)
 
 
 ### Bad Starting Macro Exception ###
 class BadStartingException(Exception):
-    def __init__(self) -> None:
-        self.message = "The macro shall start with +> or ->"
+    def __init__(self, cmd: str) -> None:
+        string = macrocache["command"]
+        string.replace(f"!exe {cmd}", f"!exe ***{cmd}***")
+        self.message = string + "\nThe macro shall start with +> or ->"
+
+        super().__init__(self.message)
+
+
+class InvalidCharacter(Exception):
+    def __init__(self, string: str) -> None:
+        highlight = string.split("\n")
+        result = ""
+
+        limit = False
+        for i, _ in enumerate(highlight[0]):
+            if not limit:
+                if highlight[1][i] != " ":
+                    pivot = f"***{highlight[0][i]}***"
+                    result = result + pivot
+                    limit = True
+                else:
+                    result = result + highlight[0][i]
+            else:
+                result = result + highlight[0][i]
+
+        self.message = (
+            result + "\nThis character is not compatible with compiler or you mistyped something"
+        )
+
+        super().__init__(self.message)
+
+
+class CompilationIncompatibility(Exception):
+    def __init__(self, string) -> None:
+        highlight = string.split("\n")
+        result = ""
+
+        limit = False
+        for i, _ in enumerate(highlight[0]):
+            if not limit:
+                if highlight[1][i] != " ":
+                    pivot = f"***{highlight[0][i]}***"
+                    result = result + pivot
+                    limit = True
+                else:
+                    result = result + highlight[0][i]
+            else:
+                result = result + highlight[0][i]
+
+        self.message = result + "\nThis argument is invalid"
 
         super().__init__(self.message)
