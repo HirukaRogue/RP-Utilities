@@ -398,8 +398,8 @@ class Database:
         self, *, prefix: str, args: str, macro_type: str, macro_attr: str, id: int
     ):
         cursor = await self.db.execute_fetchall(
-            "SELECT * FROM macros WHERE belong_id = ? and macro_prefix = ? and command = ? and type = ?",
-            (id, prefix, args, macro_type),
+            "SELECT * FROM macros WHERE belong_id = ? and macro_prefix = ?",
+            (id, prefix),
         )
 
         result = list(i for i in cursor)

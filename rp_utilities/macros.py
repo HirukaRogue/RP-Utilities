@@ -866,7 +866,7 @@ async def exemac(args, database, guild_id, author_id, bot, starter):
 
         cmd = await Compiler(macrocache).transform(grammar_compilation)
 
-        macrocache["database"].clear_cache(id=macrocache["author_id"])
+        await macrocache["database"].clear_cache(id=macrocache["author_id"])
 
         return cmd
     except Exception as e:
