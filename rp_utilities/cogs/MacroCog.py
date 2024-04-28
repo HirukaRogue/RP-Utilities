@@ -371,7 +371,7 @@ class MacroCog(commands.Cog):
         attr="Your macro new attribute (private, public or protected)",
     )
     async def _macro_edit_attribute(self, ctx, prefix: str, attr: str):
-        ctx.defer(thinking=True)
+        ctx.defer(ephemeral=True)
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             embed = discord.Embed(
                 title="Macro edition failure ❌",
