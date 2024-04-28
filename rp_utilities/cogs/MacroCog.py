@@ -66,7 +66,7 @@ class MacroCog(commands.Cog):
 
     @commands.hybrid_group(name="macro", fallback="help", help="macro")
     async def _macro(self, ctx):
-        ctx.defer(ephemeral=True)
+        await ctx.defer(ephemeral=True)
         embed = discord.Embed(
             description="With macros you can make shortcut to execute commands from the bot without needing to execute it manulally"
         )
@@ -175,7 +175,7 @@ class MacroCog(commands.Cog):
         args: str,
         macro_attr: str | None = "private",
     ):
-        ctx.defer(ephemeral=True)
+        await ctx.defer(ephemeral=True)
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             await ctx.send("Your macro prefix shall start with +> or ->")
         elif macro_attr not in ("public", "private", "protected"):
@@ -256,7 +256,7 @@ class MacroCog(commands.Cog):
         old_prefix="Your macro actual prefix", new_prefix="Your macro new prefix"
     )
     async def _macro_edit_prefix(self, ctx, old_prefix: str, new_prefix: str):
-        ctx.defer(ephemeral=True)
+        await ctx.defer(ephemeral=True)
         if (not old_prefix.startswith("+>") or not new_prefix.startswith("+>")) and (
             not old_prefix.startswith("->") or not new_prefix.startswith("->")
         ):
@@ -309,7 +309,7 @@ class MacroCog(commands.Cog):
     )
     @app_commands.describe(prefix="Your macro prefix", args="Your macro new code")
     async def _macro_edit_code(self, ctx, prefix: str, args: str):
-        ctx.defer(ephemeral=True)
+        await ctx.defer(ephemeral=True)
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             embed = discord.Embed(
                 title="Macro creation failure ❌",
@@ -371,7 +371,7 @@ class MacroCog(commands.Cog):
         attr="Your macro new attribute (private, public or protected)",
     )
     async def _macro_edit_attribute(self, ctx, prefix: str, attr: str):
-        ctx.defer(ephemeral=True)
+        await ctx.defer(ephemeral=True)
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             embed = discord.Embed(
                 title="Macro edition failure ❌",
@@ -418,7 +418,7 @@ class MacroCog(commands.Cog):
     )
     @app_commands.describe(prefix="Your macro prefix")
     async def _macro_show_command(self, ctx, prefix):
-        ctx.defer(ephemeral=True)
+        await ctx.defer(ephemeral=True)
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             embed = discord.Embed(
                 title="Macro show up failure ❌",
@@ -452,7 +452,7 @@ class MacroCog(commands.Cog):
     )
     @app_commands.describe(prefix="Your macro prefix")
     async def _macro_delete(self, ctx, prefix):
-        ctx.defer(ephemeral=True)
+        await ctx.defer(ephemeral=True)
         if not prefix.startswith("+>") and not prefix.startswith("->"):
             embed = discord.Embed(
                 title="Macro creation failure ❌",

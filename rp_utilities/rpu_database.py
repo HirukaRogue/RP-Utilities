@@ -476,7 +476,7 @@ class Database:
             (id, prefix),
         )
 
-        result = cursor.fetchone()
+        result = await cursor.fetchone()
 
         if result is not None:
             await self.db.execute(
