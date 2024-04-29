@@ -2,8 +2,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import random
-from ..miscellaneous import mathematic
+from sympy import sympify
 import re
+import traceback
 
 
 class RollCog(commands.Cog):
@@ -184,6 +185,7 @@ class RollCog(commands.Cog):
                 args_result[0] = mark[1]
                 mark.pop(1)
                 for z in range(0, int(mark[0])):
+                    print("New grounds")
                     # here will start the multi-rolling
                     if z > 0:
                         resp_sub = resp_sub + f"{z+1}#"
@@ -252,12 +254,10 @@ class RollCog(commands.Cog):
             if i < len(indice):
                 if store[i] != "" and (indice[i] == "(" or indice[i] == "["):
                     expression = expression + "*"
-                if (indice[i] == ")" or indice[i] == "]") and store[i + 1] != "":
-                    expression = expression + "*"
 
                 expression = expression + f"{indice[i]}"
 
-        sub_total = await mathematic(expression)
+        sub_total = sympify(expression)
 
         return sub_total
 
