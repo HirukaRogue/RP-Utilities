@@ -445,38 +445,15 @@ class Compiler(AsyncTransformer):
         return cmd
 
     async def math(self, cmd):
-        m = cmd
 
         if len(cmd) > 1:
             opt = cmd[1]
+            m = cmd[0]
         else:
             opt = "all"
+            m = cmd
 
-        while True:
-            m = m[0]
-            if len(m) > 1:
-                piv = ""
-                for i in m:
-                    if i == m[-1]:
-                        if isinstance(i, list):
-                            if len[i] > 1:
-                                piv = piv + str(i[1])
-                            else:
-                                piv = piv + str(i[0])
-                        else:
-                            piv = piv + str(i)
-                    else:
-                        if isinstance(i, list):
-                            if len(i) > 1:
-                                piv = piv + f" {str(i[1])}"
-                            else:
-                                piv = piv + f" {str(i[0])}"
-                        else:
-                            piv = piv + f" {str(i)}"
-                    m = piv
-            if isinstance(m, str):
-                break
-
+        m = await trim(m)
         result = await exemath(args=m, res_type=opt)
         return result
 
@@ -487,37 +464,17 @@ class Compiler(AsyncTransformer):
 
     async def roll(self, cmd):
         print(f"{cmd = }")
-        rl = cmd
-        print(f"{rl = }")
 
         if len(cmd) > 1:
             opt = cmd[1]
+            rl = cmd[0]
         else:
             opt = "all"
-        while True:
-            rl = rl[0]
-            if len(rl) > 1:
-                piv = ""
-                for i in rl:
-                    if i == rl[-1]:
-                        if isinstance(i, list):
-                            if len[i] > 1:
-                                piv = piv + str(i[1])
-                            else:
-                                piv = piv + str(i[0])
-                        else:
-                            piv = piv + str(i)
-                    else:
-                        if isinstance(i, list):
-                            if len(i) > 1:
-                                piv = piv + f" {str(i[1])}"
-                            else:
-                                piv = piv + f" {str(i[0])}"
-                        else:
-                            piv = piv + f" {str(i)}"
-                rl = piv
-            if isinstance(rl, str):
-                break
+            rl = cmd
+
+        print(f"{rl = }")
+
+        rl = await trim(rl)
 
         print(f"{rl = }")
 
@@ -807,6 +764,8 @@ class Compiler(AsyncTransformer):
             while True:
                 print(f"{kcont = }")
                 if not isinstance(kcont, list):
+                    break
+                if len(kcont) > 1:
                     break
                 kcont = kcont[0]
         if isinstance(kcont, float):
