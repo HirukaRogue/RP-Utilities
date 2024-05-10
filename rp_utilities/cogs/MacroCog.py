@@ -435,14 +435,14 @@ class MacroCog(commands.Cog):
                 )
             elif (
                 command["attribute"] in ["private", "protected"]
-                and ctx.author.guild_permissions.administrator
-            ) or prefix.startswith("+>"):
-                embed = discord.Embed(title="Macro command text", description=f"`{command['cmd']}`")
-            else:
+                and not ctx.author.guild_permissions.administrator
+            ):
                 embed = discord.Embed(
                     title="Macro show up failure ❌",
                     description="You don't have permission to see the commands from private or protected commands",
                 )
+            else:
+                embed = discord.Embed(title="Macro command text", description=f"`{command['cmd']}`")
         await ctx.send(embed=embed)
 
     @_macro.command(
