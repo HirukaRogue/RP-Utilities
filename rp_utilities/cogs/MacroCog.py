@@ -436,6 +436,7 @@ class MacroCog(commands.Cog):
             elif (
                 command["attribute"] in ["private", "protected"]
                 and not ctx.author.guild_permissions.administrator
+                and prefix.startswith("->")
             ):
                 embed = discord.Embed(
                     title="Macro show up failure ❌",
