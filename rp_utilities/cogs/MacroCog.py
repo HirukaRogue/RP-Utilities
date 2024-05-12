@@ -219,7 +219,7 @@ class MacroCog(commands.Cog):
             if isinstance(executioner, tuple):
                 embed = discord.Embed(
                     title="Macro creation failure ❌",
-                    description=f"{executioner[0]}\nIf you are having difficulty use the command `/macro docs` to read the tutorial",
+                    description=f"{executioner[0]}\nDraft:`{args}`\nIf you are having difficulty use the command `/macro docs` to read the tutorial",
                 )
             else:
                 stored = await ctx.bot.database.register_macro(
@@ -336,7 +336,7 @@ class MacroCog(commands.Cog):
             if isinstance(executioner, tuple):
                 embed = discord.Embed(
                     title="Macro edition failure ❌",
-                    description=f"{executioner[0]}\nIf you are having difficulty use the command `/macro docs` to read the tutorial",
+                    description=f"{executioner[0]}\nDraft:`{args}`\nIf you are having difficulty use the command `/macro docs` to read the tutorial",
                 )
             else:
                 result = await ctx.bot.database.update_macro(
