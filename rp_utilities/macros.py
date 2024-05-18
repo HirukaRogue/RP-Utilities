@@ -6,6 +6,7 @@ import re
 from lark import Lark, Transformer
 import discord
 from .pagination import Paginator
+from .miscellaneous import is_link
 
 
 ##################
@@ -221,6 +222,7 @@ async def exeecho(args):
     if len(args) == 1:
         y = await trim(args)
         y = y.replace("\\n", "\n")
+        y = y.replace("\\0", " ")
         print(f"{y = }")
         pages = discord.Embed(description=y)
     else:
@@ -229,6 +231,7 @@ async def exeecho(args):
             y = await trim(i)
             print(f"{y = }")
             y = y.replace("\\n", "\n")
+            y = y.replace("\\0", " ")
             embed = discord.Embed(description=y)
             chapters.append(embed)
         pages = Paginator(chapters)
@@ -266,13 +269,23 @@ async def trim(trimed):
             return trimed
 
 
+#################
+### EXE IMAGE ###
+#################
+async def exe_image(image):
+    output = discord.Embed()
+    output.set_image(url=image)
+
+    return output
+
+
 macro_grammar = Lark(
     r"""
     chain_command: command (ws command)*
     command.2: (fif | command3)
     command2.2: (fif2 | command4)
     command3.2: (echo | command4)
-    command4.2: (variable | roll | math | select)
+    command4.2: (variable | roll | math | select | image)
 
     variable: "$" command
 
@@ -285,6 +298,7 @@ macro_grammar = Lark(
     math.4: "!math" " " content2 ("," showtype)?
     echo.4: "!echo" " " finput
     select.4: "!select" " " finput
+    image.4: "!image" " " string
     execute.4: "!exe" " " sub_command
     
     listing.4: "!list" " " finput
@@ -305,8 +319,17 @@ macro_grammar = Lark(
     sub_command: string
     content.5: string? (key_cont string?)*
     content2.5: args? (key_cont args?)*
-    key_cont.5: "{" (use_var | execute | command2) "}"
+    key_cont.5: "{" (use_var | execute | command2 | formater) "}"
+    format: "{" (black | ) "}"
     finput: "[" (("(" content ")" ("," "(" content ")")*) | content) "]"
+    
+    formater: (black | italic | underline | spoiler | line)+ " " string
+
+    black: "b"
+    italic: "i"
+    underline: "u"
+    spoiler: "s"
+    line: "l"
 
     string: CHAR_CHAIN+
     args: EXPRESSIONS+
@@ -790,6 +813,16 @@ class Compiler(AsyncTransformer):
         math_arguments = cmd
         return math_arguments
 
+    async def image(self, cmd):
+        acess = await trim(cmd)
+        if is_link(acess):
+            image = acess
+            op = await exe_image(image)
+
+            return [op]
+        else:
+            raise NotURLException()
+
     async def showtype(self, cmd):
         num = int(cmd[0])
         if num == 0:
@@ -798,6 +831,39 @@ class Compiler(AsyncTransformer):
             return "only_string"
         elif num == 2:
             return "only_result"
+
+    async def formater(self, cmd):
+        text = cmd[-1]
+        frmtr = cmd
+        frmtr.pop(-1)
+
+        if "b" in frmtr:
+            text = f"**{text}**"
+        if "i" in frmtr:
+            text = f"*{text}*"
+        if "u" in frmtr:
+            text = f"__{text}__"
+        if "l" in frmtr:
+            text = f"~~{text}~~"
+        if "s" in frmtr:
+            text = f"||{text}||"
+
+        return text
+
+    async def black(self, cmd):
+        return "b"
+
+    async def italic(self, cmd):
+        return "i"
+
+    async def underline(self, cmd):
+        return "u"
+
+    async def spoiler(self, cmd):
+        return "s"
+
+    async def line(self, cmd):
+        return "l"
 
     async def ws(self, cmd):
         return None
@@ -922,5 +988,12 @@ class CompilationIncompatibility(Exception):
                 result = result + highlight[0][i]
 
         self.message = result + "\nThis argument is invalid"
+
+        super().__init__(self.message)
+
+
+class NotURLException(Exception):
+    def __init__(self) -> None:
+        self.message = "Image URL invalid, paste the image url or try another image url"
 
         super().__init__(self.message)
