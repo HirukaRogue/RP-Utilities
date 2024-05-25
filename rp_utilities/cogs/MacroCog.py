@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from .. import macros
+from ..macros import Macro
 from copy import deepcopy
 
 from ..miscellaneous import unify
@@ -34,7 +34,7 @@ class MacroCog(commands.Cog):
         ):
             return
 
-        result = await macros.exemac(
+        result = await Macro().exemac(
             args=command["cmd"],
             database=self.client.database,
             guild_id=message.guild.id,
@@ -208,7 +208,7 @@ class MacroCog(commands.Cog):
                 description="Something went wrong, someone is trying to hack the bot",
             )
         else:
-            executioner = await macros.exemac(
+            executioner = await Macro().exemac(
                 args,
                 ctx.bot.database,
                 ctx.guild.id,
@@ -325,7 +325,7 @@ class MacroCog(commands.Cog):
                 description="You don't have admin permissions change a server macro code",
             )
         else:
-            executioner = await macros.exemac(
+            executioner = await Macro().exemac(
                 args,
                 ctx.bot.database,
                 ctx.guild.id,

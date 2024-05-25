@@ -250,15 +250,15 @@ async def trim(trimed):
                 if z == trimed[-1] and isinstance(z, discord.Embed):
                     piv = piv + str(z.description)
                 elif isinstance(z, discord.Embed):
-                    piv = piv + f" {z.description}"
+                    piv = piv + f"{z.description}"
                 elif z == trimed[-1] and isinstance(z, list):
                     piv = piv + f"{z[1]}"
                 elif z == trimed[-1]:
                     piv = piv + str(z)
                 elif isinstance(z, list):
-                    piv = piv + f" {z[1]}"
+                    piv = piv + f"{z[1]}"
                 else:
-                    piv = piv + f" {z}"
+                    piv = piv + f"{z}"
             trimed = piv
             return trimed
         return await trim(trimed[0])
@@ -319,8 +319,7 @@ macro_grammar = Lark(
     sub_command: string
     content.5: string? (key_cont string?)*
     content2.5: args? (key_cont args?)*
-    key_cont.5: "{" (use_var | execute | command2 | formater) "}"
-    format: "{" (black | ) "}"
+    key_cont.5: "{" (use_var | execute | command2 | formater | ascii_character) "}"
     finput: "[" (("(" content ")" ("," "(" content ")")*) | content) "]"
     
     formater: (black | italic | underline | spoiler | line)+ " " string
@@ -331,6 +330,26 @@ macro_grammar = Lark(
     spoiler: "s"
     line: "l"
 
+    ascii_character: cidilha | crase | agudo | tio | circumflexo | position | degree | invert_inter | invert_exc
+    position: a | o
+    invert_inter: "invert ?"
+    invert_exc: "invert !"
+    
+    cidilha: "cid"
+    degree: "deg"
+    
+    a: "pos-a"
+    o: "pos-o"
+
+    crase: "`" " " LETRA_PRIM | LETRA_SEC
+    agudo: "´" " " LETRA_PRIM | LETRA_SEC
+    tio: "~" " " (LETRA_PRIM | LETRA_ESPECIAL)
+    circumflexo: "^" " " LETRA_PRIM | LETRA_SEC
+
+    LETRA_PRIM: "a" | "o"
+    LETRA_SEC: "e" | "i" | "u"
+    LETRA_ESPECIAL: "n"
+    
     string: CHAR_CHAIN+
     args: EXPRESSIONS+
     
@@ -342,7 +361,7 @@ macro_grammar = Lark(
     CHAR_CHAIN: CHAR+
     CHAR: "0".."9" | "a".."z" | "A".."Z" | SYMBOLS
     SYMBOLS: "!" | "#" | "$" | "%" | "&" | "\\" | "*" | "+" | "," | "-" | "." | "/" | ":" | ";" 
-           | "<" | "=" | ">" | "?" | "@" | "^" | "_" | "`" | "|" | "~"
+           | "<" | "=" | ">" | "?" | "@" | "^" | "_" | "`" | "|" | "~" | "¨" | "¢" | "¬" | "§"
     number: SIGNED_NUMBER 
     ws: WS
 
@@ -353,6 +372,46 @@ macro_grammar = Lark(
 """,
     start="chain_command",
 )
+
+
+async def conversor(macro: str):
+    ### This part is ASCII transformation
+    # special characters
+    macro = macro.replace("ç", r"{ cid }")
+
+    # punctuation
+    macro = macro.replace("à", r"{ ` a }")
+    macro = macro.replace("è", r"{ ` e }")
+    macro = macro.replace("ì", r"{ ` i }")
+    macro = macro.replace("ò", r"{ ` o }")
+    macro = macro.replace("ù", r"{ ` u }")
+
+    macro = macro.replace("á", r"{ ´ a }")
+    macro = macro.replace("é", r"{ ´ e }")
+    macro = macro.replace("í", r"{ ´ i }")
+    macro = macro.replace("ó", r"{ ´ o }")
+    macro = macro.replace("ú", r"{ ´ u }")
+
+    macro = macro.replace("ã", r"{ ~ a }")
+    macro = macro.replace("ñ", r"{ ~ n }")
+    macro = macro.replace("õ", r"{ ~ o }")
+
+    macro = macro.replace("â", r"{ ^ a }")
+    macro = macro.replace("ê", r"{ ^ e }")
+    macro = macro.replace("î", r"{ ^ i }")
+    macro = macro.replace("ô", r"{ ^ o }")
+    macro = macro.replace("û", r"{ ^ u }")
+
+    # positional symbols
+    macro = macro.replace("ª", r"{ pos-a }")
+    macro = macro.replace("º", r"{ pos-o }")
+    macro = macro.replace("°", r"{ deg }")
+
+    # inverted punctuations
+    macro = macro.replace("¡", r"{ invert ! }")
+    macro = macro.replace("¿", r"{ invert ? }")
+
+    return macro
 
 
 class AsyncTransformer(Transformer):
@@ -868,35 +927,107 @@ class Compiler(AsyncTransformer):
     async def ws(self, cmd):
         return None
 
+    async def ascii_character(self, cmd):
+        print(cmd)
+        return cmd
+
+    async def cidilha(self, cmd):
+        return "ç"
+
+    async def degree(self, cmd):
+        return "°"
+
+    async def position(self, cmd):
+        return cmd
+
+    async def a(self, cmd):
+        return "ª"
+
+    async def o(self, cmd):
+        return "º"
+
+    async def crase(self, cmd):
+        if "a" in cmd:
+            return "à"
+        if "e" in cmd:
+            return "è"
+        if "i" in cmd:
+            return "ì"
+        if "o" in cmd:
+            return "ò"
+        if "u" in cmd:
+            return "ù"
+
+    async def agudo(self, cmd):
+        print(f"agudo = {cmd}")
+        if "a" in cmd:
+            return "á"
+        if "e" in cmd:
+            return "é"
+        if "i" in cmd:
+            return "í"
+        if "o" in cmd:
+            return "ó"
+        if "u" in cmd:
+            return "ú"
+
+    async def tio(self, cmd):
+        if "a" in cmd:
+            return "ã"
+        if "o" in cmd:
+            return "õ"
+        if "n" in cmd:
+            return "ñ"
+
+    async def circumflexo(self, cmd):
+        if "a" in cmd:
+            return "â"
+        if "e" in cmd:
+            return "ê"
+        if "i" in cmd:
+            return "î"
+        if "o" in cmd:
+            return "ô"
+        if "u" in cmd:
+            return "û"
+
+    async def invert_inter(self, cmd):
+        return "¿"
+
+    async def invert_exc(self, cmd):
+        return "¡"
+
 
 ##########################
 ###   MACRO EXECUTER   ###
 ##########################
-async def exemac(args, database, guild_id, author_id, bot, starter):
-    macrocache["command"] = args
-    macrocache["database"] = database
-    macrocache["guild_id"] = guild_id
-    macrocache["author_id"] = author_id
-    macrocache["bot"] = bot
-    macrocache["start with ->"] = starter
+class Macro:
+    async def exemac(self, args, database, guild_id, author_id, bot, starter):
+        macrocache["command"] = args
+        macrocache["database"] = database
+        macrocache["guild_id"] = guild_id
+        macrocache["author_id"] = author_id
+        macrocache["bot"] = bot
+        macrocache["start with ->"] = starter
 
-    try:
-        print(f"{args = }")
         try:
-            grammar_compilation = macro_grammar.parse(args)
-        except (lark.UnexpectedCharacters, lark.LarkError) as error:
-            indicator = error.get_context(args)
-            print(error.__traceback__)
-            raise InvalidCharacter(indicator)
+            print(f"{args = }")
+            try:
+                args = await conversor(args)
+                grammar_compilation = macro_grammar.parse(args)
+            except (lark.UnexpectedCharacters, lark.LarkError) as error:
+                indicator = error.get_context(args)
+                print(error.__traceback__)
+                raise InvalidCharacter(indicator)
 
-        cmd = await Compiler(macrocache).transform(grammar_compilation)
+            cmd = await Compiler(macrocache).transform(grammar_compilation)
 
-        # await macrocache["database"].clear_cache(id=macrocache["author_id"])
+            # await macrocache["database"].clear_cache(id=macrocache["author_id"])
 
-        return cmd
-    except Exception as e:
-        print(e)
-        return (e,)
+            return cmd
+        except Exception as e:
+            print(e)
+            return (e,)
 
 
 #################
