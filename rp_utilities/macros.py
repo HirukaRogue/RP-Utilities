@@ -281,19 +281,23 @@ async def exe_image(image):
 
 macro_grammar = Lark(
     r"""
+    ### Here is the commands and the starter, which is chain commands, you can do more than 1 command in a command
     chain_command: command (ws command)*
     command.2: (fif | command3)
     command2.2: (fif2 | command4)
     command3.2: (echo | command4)
     command4.2: (variable | roll | math | select | image)
 
+    ### This one is not working, i don't know why, but it's suppose to create variables to my commands
     variable: "$" command
 
+    ### Conditional commands
     fif.3: command3 " " "!if" " " comparator " " felse
     fif2.3: command4 " " "!if" " " comparator " " felse2
     felse.3: "!else" " " command
     felse2.3: "!else" " " command2
 
+    ### Basic commands
     roll.4:  "!roll" " " content2 ("," showtype)?
     math.4: "!math" " " content2 ("," showtype)?
     echo.4: "!echo" " " finput
@@ -301,10 +305,12 @@ macro_grammar = Lark(
     image.4: "!image" " " string
     execute.4: "!exe" " " sub_command
     
+    ### Augments for commands
     listing.4: "!list" " " finput
     showtype.4: OPTIONS
     OPTIONS: "0" | "1" | "2"
 
+    ### Comparation for if commands
     comparator.3: command2 " " comparator_indx
     comparator_indx: major | minor | equalmajor | equalminor | different | equal | inlist
     major: ">" (content | number | command2 | execute | listing)
@@ -315,6 +321,7 @@ macro_grammar = Lark(
     equal: "==" (content | number | command2 | execute | listing)
     inlist: "in" (content | number | command2 | execute | listing)
 
+    ### main components
     use_var.2: "&" INT
     sub_command: string
     content.5: string? (key_cont string?)*
@@ -322,6 +329,7 @@ macro_grammar = Lark(
     key_cont.5: "{" (use_var | execute | command2 | formater | ascii_character) "}"
     finput: "[" (("(" content ")" ("," "(" content ")")*) | content) "]"
     
+    ### Text formatation
     formater: (black | italic | underline | spoiler | line)+ " " string
 
     black: "b"
@@ -330,6 +338,7 @@ macro_grammar = Lark(
     spoiler: "s"
     line: "l"
 
+    ### Basic unicode support
     ascii_character: cidilha | crase | agudo | tio | circumflexo | position | degree | invert_inter | invert_exc
     position: a | o
     invert_inter: "invert ?"
@@ -350,6 +359,245 @@ macro_grammar = Lark(
     LETRA_SEC: "e" | "i" | "u"
     LETRA_ESPECIAL: "n"
     
+    ###Japanese unicode support
+    # japanese: hiragana | katakana
+    # hiragana: hwa | hwo | hn
+    #         | ha | hi | hu | he | ho
+    #         | hka | hki | hku | hke | hko
+    #         | hsa | hshi | hsu | hse | hso
+    #         | hta | hchi | htsu | hte | hto
+    #         | hna | hni | hnu | hne | hno
+    #         | hha | hhi | hfu | hhe | hho
+    #         | hma | hmi | hmu | hme | hmo
+    #         | hya | hyu | hyo
+    #         | hra | hri | hru | hre | hro
+    #         | hwa | hwi | hwe | hwo
+
+    # katakana: kwa | kwo | kn
+    #         | ka | ki | ku | ke | ko
+    #         | kka | kki | kku | kke | kko
+    #         | ksa | kshi | ksu | kse | kso
+    #         | kta | kchi | ktsu | kte | kto
+    #         | kna | kni | knu | kne | kno
+    #         | kha | khi | kfu | khe | kho
+    #         | kma | kmi | kmu | kme | kmo
+    #         | kya | kyu | kyo
+    #         | kra | kri | kru | kre | kro
+    #         | kwa | kwi | kwe | kwo
+        
+    # ## Hiragana
+    # # N
+    # hn: "h-n"
+
+    # # Basic silabic
+    # ha: "h-a"
+    # hi: "h-i"
+    # hu: "h-u"
+    # he: "h-e"
+    # ho: "h-o"
+
+    # # K
+    # hka: "h-ka"
+    # hki: "h-ki"
+    # hku: "h-ku"
+    # hke: "h-ke"
+    # hko: "h-ko"
+
+    # # S
+    # hsa: "h-sa"
+    # hshi: "h-shi"
+    # hsu: "h-su"
+    # hse: "h-se"
+    # hso: "h-so"
+    
+    # # T
+    # hta: "h-sa"
+    # hchi: "h-chi"
+    # htsu: "h-tsu"
+    # hte: "h-te"
+    # hto: "h-to"
+
+    # # N
+    # hna: "h-na"
+    # hni: "h-ni"
+    # hnu: "h-nu"
+    # hne: "h-ne"
+    # hno: "h-no"
+
+    # # H & F
+    # hha: "h-ha"
+    # hhi: "h-hi"
+    # hfu: "h-fu"
+    # hhe: "h-he"
+    # hho: "h-ho"
+
+    # # M
+    # hma: "h-ma"
+    # hmi: "h-mi"
+    # hmu: "h-mu"
+    # hme: "h-me"
+    # hmo: "h-mo"
+
+    # # Y
+    # hya: "h-ya"
+    # hyu: "h-yu"
+    # hyo: "h-yo"
+
+    # # R
+    # hra: "h-ra"
+    # hri: "h-ri"
+    # hru: "h-ru"
+    # hre: "h-re"
+    # hro: "h-ro"
+    
+    # # W
+    # hwa: "h-wa"
+    # hwi: "h-wi"
+    # hwe: "h-we"
+    # hwo: "h-wo"
+
+    # # G
+    # hga: "h-ga"
+    # hgi: "h-gi"
+    # hgu: "h-gu"
+    # hge: "h-ge"
+    # hgo: "h-go"
+
+    # # Z & J
+    # hza: "h-za"
+    # hji: "h-ji"
+    # hzu: "h-zu"
+    # hze: "h-ze"
+    # hzo: "h-zo"
+
+    # # D
+    # hda: "h-da"
+    # hdji: "h-dji"
+    # hdzu: "h-dzu"
+    # hde: "h-de"
+    # hdo: "h-do"
+
+    # # B
+    # hba: "h-ba"
+    # hbi: "h-bi"
+    # hbu: "h-bu"
+    # hbe: "h-be"
+    # hbo: "h-bo"
+
+    # # P
+    # hpa: "h-pa"
+    # hpi: "h-pi"
+    # hpu: "h-pu"
+    # hpe: "h-pe"
+    # hpo: "h-po"
+
+    # ## Katakana
+    # # N
+    # kn: "k-n"
+
+    # # Basic silabic
+    # ka: "k-a"
+    # ki: "k-i"
+    # ku: "k-u"
+    # ke: "k-e"
+    # ko: "k-o"
+
+    # # K
+    # kka: "k-ka"
+    # kki: "k-ki"
+    # kku: "k-ku"
+    # kke: "k-ke"
+    # kko: "k-ko"
+
+    # # S
+    # ksa: "k-sa"
+    # kshi: "k-shi"
+    # ksu: "k-su"
+    # kse: "k-se"
+    # kso: "k-so"
+    
+    # # T
+    # kta: "k-sa"
+    # kchi: "k-chi"
+    # ktsu: "k-tsu"
+    # kte: "k-te"
+    # kto: "k-to"
+
+    # # N
+    # kna: "k-na"
+    # kni: "k-ni"
+    # knu: "k-nu"
+    # kne: "k-ne"
+    # kno: "k-no"
+
+    # # H & F
+    # kha: "k-ha"
+    # khi: "k-hi"
+    # kfu: "k-fu"
+    # khe: "k-he"
+    # kho: "k-ho"
+
+    # # M
+    # kma: "k-ma"
+    # kmi: "k-mi"
+    # kmu: "k-mu"
+    # kme: "k-me"
+    # kmo: "k-mo"
+
+    # # Y
+    # kya: "k-ya"
+    # kyu: "k-yu"
+    # kyo: "k-yo"
+
+    # # R
+    # kra: "k-ra"
+    # kri: "k-ri"
+    # kru: "k-ru"
+    # kre: "k-re"
+    # kro: "k-ro"
+    
+    # # W
+    # kwa: "k-wa"
+    # kwi: "k-wi"
+    # kwe: "k-we"
+    # kwo: "k-wo"
+
+    # # G
+    # kga: "k-ga"
+    # kgi: "k-gi"
+    # kgu: "k-gu"
+    # kge: "k-ge"
+    # kgo: "k-go"
+
+    # # Z & J
+    # kza: "k-za"
+    # kji: "k-ji"
+    # kzu: "k-zu"
+    # kze: "k-ze"
+    # kzo: "k-zo"
+
+    # # D
+    # kda: "k-da"
+    # kdji: "k-dji"
+    # kdzu: "k-dzu"
+    # kde: "k-de"
+    # kdo: "k-do"
+
+    # # B
+    # kba: "k-ba"
+    # kbi: "k-bi"
+    # kbu: "k-bu"
+    # kbe: "k-be"
+    # kbo: "k-bo"
+
+    # # P
+    # kpa: "k-pa"
+    # kpi: "k-pi"
+    # kpu: "k-pu"
+    # kpe: "k-pe"
+    # kpo: "k-po"
+
+    ### Main Components
     string: CHAR_CHAIN+
     args: EXPRESSIONS+
     
@@ -374,7 +622,25 @@ macro_grammar = Lark(
 )
 
 
+def repl(match):
+    piv = match.group()
+    piv = piv.replace("\\0", " ")
+    return piv
+
+
 async def conversor(macro: str):
+    ### This part is making use of space easier to handle, so there is no need to always type \0
+    ### for handling wise
+    pattern = r"\[(.*?)\]"
+    pivots = re.findall(pattern, macro)
+    for i in pivots:
+        piv = i
+        macro = macro.replace(f"[{i}]", "[mask]")
+        piv = piv.replace(" ", "\\0")
+        piv = re.sub("\\{ *(.+?) *\\}", repl, piv)
+        print(f"{piv = }")
+        macro = macro.replace("[mask]", f"[{piv}]")
+
     ### This part is ASCII transformation
     # special characters
     macro = macro.replace("ç", r"{ cid }")
@@ -410,6 +676,219 @@ async def conversor(macro: str):
     # inverted punctuations
     macro = macro.replace("¡", r"{ invert ! }")
     macro = macro.replace("¿", r"{ invert ? }")
+
+    ### Japanese
+    ## Hiragana
+    # N
+    macro = macro.replace("ん", r"{ h-n }")
+
+    # Base Characters
+    macro = macro.replace("あ", r"{ h-a }")
+    macro = macro.replace("い", r"{ h-i }")
+    macro = macro.replace("う", r"{ h-u }")
+    macro = macro.replace("え", r"{ h-e }")
+    macro = macro.replace("お", r"{ h-o }")
+
+    # K Characters
+    macro = macro.replace("か", r"{ h-ka }")
+    macro = macro.replace("き", r"{ h-ki }")
+    macro = macro.replace("く", r"{ h-ku }")
+    macro = macro.replace("け", r"{ h-ke }")
+    macro = macro.replace("こ", r"{ h-ko }")
+
+    # S Characters
+    macro = macro.replace("さ", r"{ h-sa }")
+    macro = macro.replace("し", r"{ h-shi }")
+    macro = macro.replace("す", r"{ h-su }")
+    macro = macro.replace("せ", r"{ h-se }")
+    macro = macro.replace("そ", r"{ h-so }")
+
+    # T Characters
+    macro = macro.replace("た", r"{ h-ta }")
+    macro = macro.replace("ち", r"{ h-chi }")
+    macro = macro.replace("つ", r"{ h-tsu }")
+    macro = macro.replace("て", r"{ h-te }")
+    macro = macro.replace("と", r"{ h-to }")
+
+    # N Characters
+    macro = macro.replace("な", r"{ h-na }")
+    macro = macro.replace("に", r"{ h-ni }")
+    macro = macro.replace("ぬ", r"{ h-nu }")
+    macro = macro.replace("ね", r"{ h-ne }")
+    macro = macro.replace("の", r"{ h-no }")
+
+    # H Characters
+    macro = macro.replace("は", r"{ h-ha }")
+    macro = macro.replace("ひ", r"{ h-hi }")
+    macro = macro.replace("ふ", r"{ h-fu }")
+    macro = macro.replace("へ", r"{ h-he }")
+    macro = macro.replace("ほ", r"{ h-ho }")
+
+    # M Characters
+    macro = macro.replace("ま", r"{ h-ma }")
+    macro = macro.replace("み", r"{ h-mi }")
+    macro = macro.replace("む", r"{ h-mu }")
+    macro = macro.replace("め", r"{ h-me }")
+    macro = macro.replace("も", r"{ h-mo }")
+
+    # Y Characters
+    macro = macro.replace("や", r"{ h-ya }")
+    macro = macro.replace("ゆ", r"{ h-yu }")
+    macro = macro.replace("よ", r"{ h-yo }")
+
+    # R Characters
+    macro = macro.replace("ら", r"{ h-ra }")
+    macro = macro.replace("り", r"{ h-ri }")
+    macro = macro.replace("る", r"{ h-ru }")
+    macro = macro.replace("れ", r"{ h-re }")
+    macro = macro.replace("ろ", r"{ h-ro }")
+
+    # W Characters
+    macro = macro.replace("わ", r"{ h-wa }")
+    macro = macro.replace("ゐ", r"{ h-wi }")
+    macro = macro.replace("ゑ", r"{ h-we }")
+    macro = macro.replace("を", r"{ h-wo }")
+
+    # G Characters
+    macro = macro.replace("が", r"{ h-ga }")
+    macro = macro.replace("ぎ", r"{ h-gi }")
+    macro = macro.replace("ぐ", r"{ h-gu }")
+    macro = macro.replace("げ", r"{ h-ge }")
+    macro = macro.replace("ご", r"{ h-go }")
+
+    # Z Characters
+    macro = macro.replace("ざ", r"{ h-za }")
+    macro = macro.replace("じ", r"{ h-ji }")
+    macro = macro.replace("ず", r"{ h-zu }")
+    macro = macro.replace("ぜ", r"{ h-ze }")
+    macro = macro.replace("ぞ", r"{ h-zo }")
+
+    # D Characters
+    macro = macro.replace("だ", r"{ h-da }")
+    macro = macro.replace("ぢ", r"{ h-dji }")
+    macro = macro.replace("づ", r"{ h-dzu }")
+    macro = macro.replace("で", r"{ h-de }")
+    macro = macro.replace("ど", r"{ h-do }")
+
+    # B Characters
+    macro = macro.replace("ば", r"{ h-ba }")
+    macro = macro.replace("び", r"{ h-bi }")
+    macro = macro.replace("ぶ", r"{ h-bu }")
+    macro = macro.replace("べ", r"{ h-be }")
+    macro = macro.replace("ぼ", r"{ h-bo }")
+
+    # P Characters
+    macro = macro.replace("ぱ", r"{ h-pa }")
+    macro = macro.replace("ぴ", r"{ h-pi }")
+    macro = macro.replace("ぷ", r"{ h-pu }")
+    macro = macro.replace("ぺ", r"{ h-pe }")
+    macro = macro.replace("ぽ", r"{ h-po }")
+
+    ## Katakana
+    # N
+    macro = macro.replace("ン", r"{ k-n }")
+
+    # Base Characters
+    macro = macro.replace("ア", r"{ k-a }")
+    macro = macro.replace("イ", r"{ k-i }")
+    macro = macro.replace("ウ", r"{ k-u }")
+    macro = macro.replace("エ", r"{ k-e }")
+    macro = macro.replace("オ", r"{ k-o }")
+
+    # K Characters
+    macro = macro.replace("カ", r"{ k-ka }")
+    macro = macro.replace("キ", r"{ k-ki }")
+    macro = macro.replace("ク", r"{ k-ku }")
+    macro = macro.replace("ケ", r"{ k-ke }")
+    macro = macro.replace("コ", r"{ k-ko }")
+
+    # S Characters
+    macro = macro.replace("サ", r"{ k-sa }")
+    macro = macro.replace("シ", r"{ k-shi }")
+    macro = macro.replace("ス", r"{ k-su }")
+    macro = macro.replace("セ", r"{ k-se }")
+    macro = macro.replace("ソ", r"{ k-so }")
+
+    # T Characters
+    macro = macro.replace("タ", r"{ k-ta }")
+    macro = macro.replace("チ", r"{ k-chi }")
+    macro = macro.replace("ツ", r"{ k-tsu }")
+    macro = macro.replace("テ", r"{ k-te }")
+    macro = macro.replace("ト", r"{ k-to }")
+
+    # N Characters
+    macro = macro.replace("ナ", r"{ k-na }")
+    macro = macro.replace("ニ", r"{ k-ni }")
+    macro = macro.replace("ヌ", r"{ k-nu }")
+    macro = macro.replace("ネ", r"{ k-ne }")
+    macro = macro.replace("ノ", r"{ k-no }")
+
+    # H Characters
+    macro = macro.replace("ハ", r"{ k-ha }")
+    macro = macro.replace("ヒ", r"{ k-hi }")
+    macro = macro.replace("フ", r"{ k-fu }")
+    macro = macro.replace("ヘ", r"{ k-he }")
+    macro = macro.replace("ホ", r"{ k-ho }")
+
+    # M Characters
+    macro = macro.replace("マ", r"{ k-ma }")
+    macro = macro.replace("ミ", r"{ k-mi }")
+    macro = macro.replace("ム", r"{ k-mu }")
+    macro = macro.replace("メ", r"{ k-me }")
+    macro = macro.replace("モ", r"{ k-mo }")
+
+    # Y Characters
+    macro = macro.replace("ヤ", r"{ k-ya }")
+    macro = macro.replace("ユ", r"{ k-yu }")
+    macro = macro.replace("ヨ", r"{ k-yo }")
+
+    # R Characters
+    macro = macro.replace("ラ", r"{ k-ra }")
+    macro = macro.replace("リ", r"{ k-ri }")
+    macro = macro.replace("ル", r"{ k-ru }")
+    macro = macro.replace("レ", r"{ k-re }")
+    macro = macro.replace("ロ", r"{ k-ro }")
+
+    # W Characters
+    macro = macro.replace("ワ", r"{ k-wa }")
+    macro = macro.replace("ヰ", r"{ k-wi }")
+    macro = macro.replace("ヱ", r"{ k-we }")
+    macro = macro.replace("ヲ", r"{ k-wo }")
+
+    # G Characters
+    macro = macro.replace("ガ", r"{ k-ga }")
+    macro = macro.replace("ギ", r"{ k-gi }")
+    macro = macro.replace("グ", r"{ k-gu }")
+    macro = macro.replace("ゲ", r"{ k-ge }")
+    macro = macro.replace("ゴ", r"{ k-go }")
+
+    # Z Characters
+    macro = macro.replace("ザ", r"{ k-za }")
+    macro = macro.replace("ジ", r"{ k-ji }")
+    macro = macro.replace("ズ", r"{ k-zu }")
+    macro = macro.replace("ゼ", r"{ k-ze }")
+    macro = macro.replace("ゾ", r"{ k-zo }")
+
+    # D Characters
+    macro = macro.replace("ダ", r"{ k-da }")
+    macro = macro.replace("ヂ", r"{ k-dji }")
+    macro = macro.replace("ヅ", r"{ k-dzu }")
+    macro = macro.replace("デ", r"{ k-de }")
+    macro = macro.replace("ド", r"{ k-do }")
+
+    # B Characters
+    macro = macro.replace("バ", r"{ k-ba }")
+    macro = macro.replace("ビ", r"{ k-bi }")
+    macro = macro.replace("ブ", r"{ k-bu }")
+    macro = macro.replace("ベ", r"{ k-be }")
+    macro = macro.replace("ボ", r"{ k-bo }")
+
+    # P Characters
+    macro = macro.replace("パ", r"{ k-pa }")
+    macro = macro.replace("ピ", r"{ k-pi }")
+    macro = macro.replace("プ", r"{ k-pu }")
+    macro = macro.replace("ペ", r"{ k-pe }")
+    macro = macro.replace("ポ", r"{ k-po }")
 
     return macro
 
@@ -503,7 +982,7 @@ class Compiler(AsyncTransformer):
             return chain_cmd
         except (lark.UnexpectedCharacters, lark.LarkError) as error:
             indicator = error.get_context(macro, len(macro))
-            print(error.__traceback__)
+            traceback.print_tb(error.__traceback__)
             raise CompilationIncompatibility(indicator)
 
     async def command4(self, cmd):
@@ -997,6 +1476,483 @@ class Compiler(AsyncTransformer):
     async def invert_exc(self, cmd):
         return "¡"
 
+    # ### Hiragana
+    # async def hiragana(self, cmd):
+    #     return cmd
+
+    # # N
+    # async def hn(self, cmd):
+    #     return "ん"
+
+    # # Basic Silabic
+    # async def ha(self, cmd):
+    #     return "あ"
+
+    # async def hi(self, cmd):
+    #     return "い"
+
+    # async def hu(self, cmd):
+    #     return "う"
+
+    # async def he(self, cmd):
+    #     return "え"
+
+    # async def ho(self, cmd):
+    #     return "お"
+
+    # # K
+    # async def hka(self, cmd):
+    #     return "か"
+
+    # async def hki(self, cmd):
+    #     return "き"
+
+    # async def hku(self, cmd):
+    #     return "く"
+
+    # async def hke(self, cmd):
+    #     return "け"
+
+    # async def hko(self, cmd):
+    #     return "こ"
+
+    # # S
+    # async def hsa(self, cmd):
+    #     return "さ"
+
+    # async def hshi(self, cmd):
+    #     return "し"
+
+    # async def hsu(self, cmd):
+    #     return "す"
+
+    # async def hse(self, cmd):
+    #     return "せ"
+
+    # async def hso(self, cmd):
+    #     return "そ"
+
+    # # T
+    # async def hta(self, cmd):
+    #     return "た"
+
+    # async def hchi(self, cmd):
+    #     return "ち"
+
+    # async def htsu(self, cmd):
+    #     return "つ"
+
+    # async def hte(self, cmd):
+    #     return "て"
+
+    # async def hto(self, cmd):
+    #     return "と"
+
+    # # N
+    # async def hna(self, cmd):
+    #     return "な"
+
+    # async def hni(self, cmd):
+    #     return "に"
+
+    # async def hnu(self, cmd):
+    #     return "ぬ"
+
+    # async def hne(self, cmd):
+    #     return "ね"
+
+    # async def hno(self, cmd):
+    #     return "の"
+
+    # # H
+    # async def hha(self, cmd):
+    #     return "は"
+
+    # async def hhi(self, cmd):
+    #     return "ひ"
+
+    # async def hfu(self, cmd):
+    #     return "ふ"
+
+    # async def hhe(self, cmd):
+    #     return "へ"
+
+    # async def hho(self, cmd):
+    #     return "ほ"
+
+    # # M
+    # async def hma(self, cmd):
+    #     return "ま"
+
+    # async def hmi(self, cmd):
+    #     return "み"
+
+    # async def hmu(self, cmd):
+    #     return "む"
+
+    # async def hme(self, cmd):
+    #     return "め"
+
+    # async def hmo(self, cmd):
+    #     return "も"
+
+    # # Y
+    # async def hya(self, cmd):
+    #     return "や"
+
+    # async def hyu(self, cmd):
+    #     return "ゆ"
+
+    # async def hyo(self, cmd):
+    #     return "よ"
+
+    # # M
+    # async def hra(self, cmd):
+    #     return "ら"
+
+    # async def hri(self, cmd):
+    #     return "り"
+
+    # async def hru(self, cmd):
+    #     return "る"
+
+    # async def hre(self, cmd):
+    #     return "れ"
+
+    # async def hro(self, cmd):
+    #     return "ろ"
+
+    # # M
+    # async def hwa(self, cmd):
+    #     return "わ"
+
+    # async def hwi(self, cmd):
+    #     return "ゐ"
+
+    # async def hwe(self, cmd):
+    #     return "ゑ"
+
+    # async def hwo(self, cmd):
+    #     return "を"
+
+    # # G
+    # async def hga(self, cmd):
+    #     return "が"
+
+    # async def hgi(self, cmd):
+    #     return "ぎ"
+
+    # async def hgu(self, cmd):
+    #     return "ぐ"
+
+    # async def hge(self, cmd):
+    #     return "げ"
+
+    # async def hgo(self, cmd):
+    #     return "ご"
+
+    # # Z
+    # async def hza(self, cmd):
+    #     return "ざ"
+
+    # async def hji(self, cmd):
+    #     return "じ"
+
+    # async def hzu(self, cmd):
+    #     return "ず"
+
+    # async def hze(self, cmd):
+    #     return "ぜ"
+
+    # async def hzo(self, cmd):
+    #     return "ぞ"
+
+    # # D
+    # async def hda(self, cmd):
+    #     return "だ"
+
+    # async def hdji(self, cmd):
+    #     return "ぢ"
+
+    # async def hdzu(self, cmd):
+    #     return "づ"
+
+    # async def hde(self, cmd):
+    #     return "で"
+
+    # async def hdo(self, cmd):
+    #     return "ど"
+
+    # # B
+    # async def hba(self, cmd):
+    #     return "ば"
+
+    # async def hbi(self, cmd):
+    #     return "び"
+
+    # async def hbu(self, cmd):
+    #     return "ぶ"
+
+    # async def hbe(self, cmd):
+    #     return "べ"
+
+    # async def hbo(self, cmd):
+    #     return "ぼ"
+
+    # # P
+    # async def hpa(self, cmd):
+    #     return "ぱ"
+
+    # async def hpi(self, cmd):
+    #     return "ぴ"
+
+    # async def hpu(self, cmd):
+    #     return "ぷ"
+
+    # async def hpe(self, cmd):
+    #     return "ぺ"
+
+    # async def hpo(self, cmd):
+    #     return "ぽ"
+
+    # async def katakana(self, cmd):
+    #     return cmd
+
+    # # N
+    # async def kn(self, cmd):
+    #     return "ン"
+
+    # # Basic Silabic
+    # async def ka(self, cmd):
+    #     return "ア"
+
+    # async def ki(self, cmd):
+    #     return "イ"
+
+    # async def ku(self, cmd):
+    #     return "ウ"
+
+    # async def ke(self, cmd):
+    #     return "エ"
+
+    # async def ko(self, cmd):
+    #     return "オ"
+
+    # # K
+    # async def kka(self, cmd):
+    #     return "カ"
+
+    # async def kki(self, cmd):
+    #     return "キ"
+
+    # async def kku(self, cmd):
+    #     return "ク"
+
+    # async def kke(self, cmd):
+    #     return "ケ"
+
+    # async def kko(self, cmd):
+    #     return "コ"
+
+    # # S
+    # async def ksa(self, cmd):
+    #     return "サ"
+
+    # async def kshi(self, cmd):
+    #     return "シ"
+
+    # async def ksu(self, cmd):
+    #     return "ス"
+
+    # async def kse(self, cmd):
+    #     return "セ"
+
+    # async def kso(self, cmd):
+    #     return "ソ"
+
+    # # T
+    # async def kta(self, cmd):
+    #     return "タ"
+
+    # async def kchi(self, cmd):
+    #     return "チ"
+
+    # async def ktsu(self, cmd):
+    #     return "ツ"
+
+    # async def kte(self, cmd):
+    #     return "テ"
+
+    # async def kto(self, cmd):
+    #     return "ト"
+
+    # # N
+    # async def kna(self, cmd):
+    #     return "ナ"
+
+    # async def kni(self, cmd):
+    #     return "ニ"
+
+    # async def knu(self, cmd):
+    #     return "ヌ"
+
+    # async def kne(self, cmd):
+    #     return "ネ"
+
+    # async def kno(self, cmd):
+    #     return "ノ"
+
+    # # H
+    # async def kha(self, cmd):
+    #     return "ハ"
+
+    # async def khi(self, cmd):
+    #     return "ヒ"
+
+    # async def kfu(self, cmd):
+    #     return "フ"
+
+    # async def khe(self, cmd):
+    #     return "ヘ"
+
+    # async def kho(self, cmd):
+    #     return "ホ"
+
+    # # M
+    # async def kma(self, cmd):
+    #     return "マ"
+
+    # async def kmi(self, cmd):
+    #     return "ミ"
+
+    # async def kmu(self, cmd):
+    #     return "ム"
+
+    # async def kme(self, cmd):
+    #     return "メ"
+
+    # async def kmo(self, cmd):
+    #     return "モ"
+
+    # # Y
+    # async def kya(self, cmd):
+    #     return "ヤ"
+
+    # async def kyu(self, cmd):
+    #     return "ユ"
+
+    # async def kyo(self, cmd):
+    #     return "ヨ"
+
+    # # R
+    # async def kra(self, cmd):
+    #     return "ラ"
+
+    # async def kri(self, cmd):
+    #     return "リ"
+
+    # async def kru(self, cmd):
+    #     return "ル"
+
+    # async def kre(self, cmd):
+    #     return "レ"
+
+    # async def kro(self, cmd):
+    #     return "ロ"
+
+    # # W
+    # async def kwa(self, cmd):
+    #     return "ワ"
+
+    # async def kwi(self, cmd):
+    #     return "ヰ"
+
+    # async def kwe(self, cmd):
+    #     return "ヱ"
+
+    # async def kwo(self, cmd):
+    #     return "ヲ"
+
+    # # G
+    # async def kga(self, cmd):
+    #     return "ガ"
+
+    # async def kgi(self, cmd):
+    #     return "ギ"
+
+    # async def kgu(self, cmd):
+    #     return "グ"
+
+    # async def kge(self, cmd):
+    #     return "ゲ"
+
+    # async def kgo(self, cmd):
+    #     return "ゴ"
+
+    # # Z
+    # async def kza(self, cmd):
+    #     return "ザ"
+
+    # async def kji(self, cmd):
+    #     return "ジ"
+
+    # async def kzu(self, cmd):
+    #     return "ズ"
+
+    # async def kze(self, cmd):
+    #     return "ゼ"
+
+    # async def kzo(self, cmd):
+    #     return "ゾ"
+
+    # # D
+    # async def kda(self, cmd):
+    #     return "ダ"
+
+    # async def kdji(self, cmd):
+    #     return "ヂ"
+
+    # async def kdzu(self, cmd):
+    #     return "ヅ"
+
+    # async def kde(self, cmd):
+    #     return "デ"
+
+    # async def kdo(self, cmd):
+    #     return "ド"
+
+    # # B
+    # async def kba(self, cmd):
+    #     return "バ"
+
+    # async def kbi(self, cmd):
+    #     return "ビ"
+
+    # async def kbu(self, cmd):
+    #     return "ブ"
+
+    # async def kbe(self, cmd):
+    #     return "ベ"
+
+    # async def kbo(self, cmd):
+    #     return "ボ"
+
+    # # P
+    # async def kpa(self, cmd):
+    #     return "パ"
+
+    # async def kpi(self, cmd):
+    #     return "ピ"
+
+    # async def kpu(self, cmd):
+    #     return "プ"
+
+    # async def kpe(self, cmd):
+    #     return "ペ"
+
+    # async def kpo(self, cmd):
+    #     return "ポ"
+
 
 ##########################
 ###   MACRO EXECUTER   ###
@@ -1014,10 +1970,12 @@ class Macro:
             print(f"{args = }")
             try:
                 args = await conversor(args)
+                print(f"{args = }")
                 grammar_compilation = macro_grammar.parse(args)
             except (lark.UnexpectedCharacters, lark.LarkError) as error:
                 indicator = error.get_context(args)
-                print(error.__traceback__)
+                # print(error.__traceback__)
+                traceback.print_tb(error.__traceback__)
                 raise InvalidCharacter(indicator)
 
             cmd = await Compiler(macrocache).transform(grammar_compilation)
