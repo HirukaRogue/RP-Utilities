@@ -607,9 +607,16 @@ macro_grammar = Lark(
                 | "+" | "-" | "*" | "/" | "."
                 | "(" | ")" | "#"
     CHAR_CHAIN: CHAR+
-    CHAR: "0".."9" | "a".."z" | "A".."Z" | SYMBOLS
+    CHAR: "0".."9" | "a".."z" | "A".."Z" | SYMBOLS | CHINESE | JAPANESE
     SYMBOLS: "!" | "#" | "$" | "%" | "&" | "\\" | "*" | "+" | "," | "-" | "." | "/" | ":" | ";" 
            | "<" | "=" | ">" | "?" | "@" | "^" | "_" | "`" | "|" | "~" | "¨" | "¢" | "¬" | "§"
+    CHINESE: /[u"\u4e00-\u9fa5"]/
+    JAPANESE: HIRAGANA | KATAKANA | KANJI | ROMANJI | JPUNCTUATION
+    HIRAGANA: /[u"\u3040-\u309f"]/
+    KATAKANA: /[u"\u30a0-\u30ff"]/
+    KANJI: /[u"\uff00-\uffef"]/
+    ROMANJI: /[u"\u3040-\u309f"]/
+    JPUNCTUATION: /[u"\u3000-\u303f"]/
     number: SIGNED_NUMBER 
     ws: WS
 
@@ -680,215 +687,215 @@ async def conversor(macro: str):
     ### Japanese
     ## Hiragana
     # N
-    macro = macro.replace("ん", r"{ h-n }")
+    # macro = macro.replace("ん", r"{ h-n }")
 
-    # Base Characters
-    macro = macro.replace("あ", r"{ h-a }")
-    macro = macro.replace("い", r"{ h-i }")
-    macro = macro.replace("う", r"{ h-u }")
-    macro = macro.replace("え", r"{ h-e }")
-    macro = macro.replace("お", r"{ h-o }")
+    # # Base Characters
+    # macro = macro.replace("あ", r"{ h-a }")
+    # macro = macro.replace("い", r"{ h-i }")
+    # macro = macro.replace("う", r"{ h-u }")
+    # macro = macro.replace("え", r"{ h-e }")
+    # macro = macro.replace("お", r"{ h-o }")
 
-    # K Characters
-    macro = macro.replace("か", r"{ h-ka }")
-    macro = macro.replace("き", r"{ h-ki }")
-    macro = macro.replace("く", r"{ h-ku }")
-    macro = macro.replace("け", r"{ h-ke }")
-    macro = macro.replace("こ", r"{ h-ko }")
+    # # K Characters
+    # macro = macro.replace("か", r"{ h-ka }")
+    # macro = macro.replace("き", r"{ h-ki }")
+    # macro = macro.replace("く", r"{ h-ku }")
+    # macro = macro.replace("け", r"{ h-ke }")
+    # macro = macro.replace("こ", r"{ h-ko }")
 
-    # S Characters
-    macro = macro.replace("さ", r"{ h-sa }")
-    macro = macro.replace("し", r"{ h-shi }")
-    macro = macro.replace("す", r"{ h-su }")
-    macro = macro.replace("せ", r"{ h-se }")
-    macro = macro.replace("そ", r"{ h-so }")
+    # # S Characters
+    # macro = macro.replace("さ", r"{ h-sa }")
+    # macro = macro.replace("し", r"{ h-shi }")
+    # macro = macro.replace("す", r"{ h-su }")
+    # macro = macro.replace("せ", r"{ h-se }")
+    # macro = macro.replace("そ", r"{ h-so }")
 
-    # T Characters
-    macro = macro.replace("た", r"{ h-ta }")
-    macro = macro.replace("ち", r"{ h-chi }")
-    macro = macro.replace("つ", r"{ h-tsu }")
-    macro = macro.replace("て", r"{ h-te }")
-    macro = macro.replace("と", r"{ h-to }")
+    # # T Characters
+    # macro = macro.replace("た", r"{ h-ta }")
+    # macro = macro.replace("ち", r"{ h-chi }")
+    # macro = macro.replace("つ", r"{ h-tsu }")
+    # macro = macro.replace("て", r"{ h-te }")
+    # macro = macro.replace("と", r"{ h-to }")
 
-    # N Characters
-    macro = macro.replace("な", r"{ h-na }")
-    macro = macro.replace("に", r"{ h-ni }")
-    macro = macro.replace("ぬ", r"{ h-nu }")
-    macro = macro.replace("ね", r"{ h-ne }")
-    macro = macro.replace("の", r"{ h-no }")
+    # # N Characters
+    # macro = macro.replace("な", r"{ h-na }")
+    # macro = macro.replace("に", r"{ h-ni }")
+    # macro = macro.replace("ぬ", r"{ h-nu }")
+    # macro = macro.replace("ね", r"{ h-ne }")
+    # macro = macro.replace("の", r"{ h-no }")
 
-    # H Characters
-    macro = macro.replace("は", r"{ h-ha }")
-    macro = macro.replace("ひ", r"{ h-hi }")
-    macro = macro.replace("ふ", r"{ h-fu }")
-    macro = macro.replace("へ", r"{ h-he }")
-    macro = macro.replace("ほ", r"{ h-ho }")
+    # # H Characters
+    # macro = macro.replace("は", r"{ h-ha }")
+    # macro = macro.replace("ひ", r"{ h-hi }")
+    # macro = macro.replace("ふ", r"{ h-fu }")
+    # macro = macro.replace("へ", r"{ h-he }")
+    # macro = macro.replace("ほ", r"{ h-ho }")
 
-    # M Characters
-    macro = macro.replace("ま", r"{ h-ma }")
-    macro = macro.replace("み", r"{ h-mi }")
-    macro = macro.replace("む", r"{ h-mu }")
-    macro = macro.replace("め", r"{ h-me }")
-    macro = macro.replace("も", r"{ h-mo }")
+    # # M Characters
+    # macro = macro.replace("ま", r"{ h-ma }")
+    # macro = macro.replace("み", r"{ h-mi }")
+    # macro = macro.replace("む", r"{ h-mu }")
+    # macro = macro.replace("め", r"{ h-me }")
+    # macro = macro.replace("も", r"{ h-mo }")
 
-    # Y Characters
-    macro = macro.replace("や", r"{ h-ya }")
-    macro = macro.replace("ゆ", r"{ h-yu }")
-    macro = macro.replace("よ", r"{ h-yo }")
+    # # Y Characters
+    # macro = macro.replace("や", r"{ h-ya }")
+    # macro = macro.replace("ゆ", r"{ h-yu }")
+    # macro = macro.replace("よ", r"{ h-yo }")
 
-    # R Characters
-    macro = macro.replace("ら", r"{ h-ra }")
-    macro = macro.replace("り", r"{ h-ri }")
-    macro = macro.replace("る", r"{ h-ru }")
-    macro = macro.replace("れ", r"{ h-re }")
-    macro = macro.replace("ろ", r"{ h-ro }")
+    # # R Characters
+    # macro = macro.replace("ら", r"{ h-ra }")
+    # macro = macro.replace("り", r"{ h-ri }")
+    # macro = macro.replace("る", r"{ h-ru }")
+    # macro = macro.replace("れ", r"{ h-re }")
+    # macro = macro.replace("ろ", r"{ h-ro }")
 
-    # W Characters
-    macro = macro.replace("わ", r"{ h-wa }")
-    macro = macro.replace("ゐ", r"{ h-wi }")
-    macro = macro.replace("ゑ", r"{ h-we }")
-    macro = macro.replace("を", r"{ h-wo }")
+    # # W Characters
+    # macro = macro.replace("わ", r"{ h-wa }")
+    # macro = macro.replace("ゐ", r"{ h-wi }")
+    # macro = macro.replace("ゑ", r"{ h-we }")
+    # macro = macro.replace("を", r"{ h-wo }")
 
-    # G Characters
-    macro = macro.replace("が", r"{ h-ga }")
-    macro = macro.replace("ぎ", r"{ h-gi }")
-    macro = macro.replace("ぐ", r"{ h-gu }")
-    macro = macro.replace("げ", r"{ h-ge }")
-    macro = macro.replace("ご", r"{ h-go }")
+    # # G Characters
+    # macro = macro.replace("が", r"{ h-ga }")
+    # macro = macro.replace("ぎ", r"{ h-gi }")
+    # macro = macro.replace("ぐ", r"{ h-gu }")
+    # macro = macro.replace("げ", r"{ h-ge }")
+    # macro = macro.replace("ご", r"{ h-go }")
 
-    # Z Characters
-    macro = macro.replace("ざ", r"{ h-za }")
-    macro = macro.replace("じ", r"{ h-ji }")
-    macro = macro.replace("ず", r"{ h-zu }")
-    macro = macro.replace("ぜ", r"{ h-ze }")
-    macro = macro.replace("ぞ", r"{ h-zo }")
+    # # Z Characters
+    # macro = macro.replace("ざ", r"{ h-za }")
+    # macro = macro.replace("じ", r"{ h-ji }")
+    # macro = macro.replace("ず", r"{ h-zu }")
+    # macro = macro.replace("ぜ", r"{ h-ze }")
+    # macro = macro.replace("ぞ", r"{ h-zo }")
 
-    # D Characters
-    macro = macro.replace("だ", r"{ h-da }")
-    macro = macro.replace("ぢ", r"{ h-dji }")
-    macro = macro.replace("づ", r"{ h-dzu }")
-    macro = macro.replace("で", r"{ h-de }")
-    macro = macro.replace("ど", r"{ h-do }")
+    # # D Characters
+    # macro = macro.replace("だ", r"{ h-da }")
+    # macro = macro.replace("ぢ", r"{ h-dji }")
+    # macro = macro.replace("づ", r"{ h-dzu }")
+    # macro = macro.replace("で", r"{ h-de }")
+    # macro = macro.replace("ど", r"{ h-do }")
 
-    # B Characters
-    macro = macro.replace("ば", r"{ h-ba }")
-    macro = macro.replace("び", r"{ h-bi }")
-    macro = macro.replace("ぶ", r"{ h-bu }")
-    macro = macro.replace("べ", r"{ h-be }")
-    macro = macro.replace("ぼ", r"{ h-bo }")
+    # # B Characters
+    # macro = macro.replace("ば", r"{ h-ba }")
+    # macro = macro.replace("び", r"{ h-bi }")
+    # macro = macro.replace("ぶ", r"{ h-bu }")
+    # macro = macro.replace("べ", r"{ h-be }")
+    # macro = macro.replace("ぼ", r"{ h-bo }")
 
-    # P Characters
-    macro = macro.replace("ぱ", r"{ h-pa }")
-    macro = macro.replace("ぴ", r"{ h-pi }")
-    macro = macro.replace("ぷ", r"{ h-pu }")
-    macro = macro.replace("ぺ", r"{ h-pe }")
-    macro = macro.replace("ぽ", r"{ h-po }")
+    # # P Characters
+    # macro = macro.replace("ぱ", r"{ h-pa }")
+    # macro = macro.replace("ぴ", r"{ h-pi }")
+    # macro = macro.replace("ぷ", r"{ h-pu }")
+    # macro = macro.replace("ぺ", r"{ h-pe }")
+    # macro = macro.replace("ぽ", r"{ h-po }")
 
-    ## Katakana
-    # N
-    macro = macro.replace("ン", r"{ k-n }")
+    # ## Katakana
+    # # N
+    # macro = macro.replace("ン", r"{ k-n }")
 
-    # Base Characters
-    macro = macro.replace("ア", r"{ k-a }")
-    macro = macro.replace("イ", r"{ k-i }")
-    macro = macro.replace("ウ", r"{ k-u }")
-    macro = macro.replace("エ", r"{ k-e }")
-    macro = macro.replace("オ", r"{ k-o }")
+    # # Base Characters
+    # macro = macro.replace("ア", r"{ k-a }")
+    # macro = macro.replace("イ", r"{ k-i }")
+    # macro = macro.replace("ウ", r"{ k-u }")
+    # macro = macro.replace("エ", r"{ k-e }")
+    # macro = macro.replace("オ", r"{ k-o }")
 
-    # K Characters
-    macro = macro.replace("カ", r"{ k-ka }")
-    macro = macro.replace("キ", r"{ k-ki }")
-    macro = macro.replace("ク", r"{ k-ku }")
-    macro = macro.replace("ケ", r"{ k-ke }")
-    macro = macro.replace("コ", r"{ k-ko }")
+    # # K Characters
+    # macro = macro.replace("カ", r"{ k-ka }")
+    # macro = macro.replace("キ", r"{ k-ki }")
+    # macro = macro.replace("ク", r"{ k-ku }")
+    # macro = macro.replace("ケ", r"{ k-ke }")
+    # macro = macro.replace("コ", r"{ k-ko }")
 
-    # S Characters
-    macro = macro.replace("サ", r"{ k-sa }")
-    macro = macro.replace("シ", r"{ k-shi }")
-    macro = macro.replace("ス", r"{ k-su }")
-    macro = macro.replace("セ", r"{ k-se }")
-    macro = macro.replace("ソ", r"{ k-so }")
+    # # S Characters
+    # macro = macro.replace("サ", r"{ k-sa }")
+    # macro = macro.replace("シ", r"{ k-shi }")
+    # macro = macro.replace("ス", r"{ k-su }")
+    # macro = macro.replace("セ", r"{ k-se }")
+    # macro = macro.replace("ソ", r"{ k-so }")
 
-    # T Characters
-    macro = macro.replace("タ", r"{ k-ta }")
-    macro = macro.replace("チ", r"{ k-chi }")
-    macro = macro.replace("ツ", r"{ k-tsu }")
-    macro = macro.replace("テ", r"{ k-te }")
-    macro = macro.replace("ト", r"{ k-to }")
+    # # T Characters
+    # macro = macro.replace("タ", r"{ k-ta }")
+    # macro = macro.replace("チ", r"{ k-chi }")
+    # macro = macro.replace("ツ", r"{ k-tsu }")
+    # macro = macro.replace("テ", r"{ k-te }")
+    # macro = macro.replace("ト", r"{ k-to }")
 
-    # N Characters
-    macro = macro.replace("ナ", r"{ k-na }")
-    macro = macro.replace("ニ", r"{ k-ni }")
-    macro = macro.replace("ヌ", r"{ k-nu }")
-    macro = macro.replace("ネ", r"{ k-ne }")
-    macro = macro.replace("ノ", r"{ k-no }")
+    # # N Characters
+    # macro = macro.replace("ナ", r"{ k-na }")
+    # macro = macro.replace("ニ", r"{ k-ni }")
+    # macro = macro.replace("ヌ", r"{ k-nu }")
+    # macro = macro.replace("ネ", r"{ k-ne }")
+    # macro = macro.replace("ノ", r"{ k-no }")
 
-    # H Characters
-    macro = macro.replace("ハ", r"{ k-ha }")
-    macro = macro.replace("ヒ", r"{ k-hi }")
-    macro = macro.replace("フ", r"{ k-fu }")
-    macro = macro.replace("ヘ", r"{ k-he }")
-    macro = macro.replace("ホ", r"{ k-ho }")
+    # # H Characters
+    # macro = macro.replace("ハ", r"{ k-ha }")
+    # macro = macro.replace("ヒ", r"{ k-hi }")
+    # macro = macro.replace("フ", r"{ k-fu }")
+    # macro = macro.replace("ヘ", r"{ k-he }")
+    # macro = macro.replace("ホ", r"{ k-ho }")
 
-    # M Characters
-    macro = macro.replace("マ", r"{ k-ma }")
-    macro = macro.replace("ミ", r"{ k-mi }")
-    macro = macro.replace("ム", r"{ k-mu }")
-    macro = macro.replace("メ", r"{ k-me }")
-    macro = macro.replace("モ", r"{ k-mo }")
+    # # M Characters
+    # macro = macro.replace("マ", r"{ k-ma }")
+    # macro = macro.replace("ミ", r"{ k-mi }")
+    # macro = macro.replace("ム", r"{ k-mu }")
+    # macro = macro.replace("メ", r"{ k-me }")
+    # macro = macro.replace("モ", r"{ k-mo }")
 
-    # Y Characters
-    macro = macro.replace("ヤ", r"{ k-ya }")
-    macro = macro.replace("ユ", r"{ k-yu }")
-    macro = macro.replace("ヨ", r"{ k-yo }")
+    # # Y Characters
+    # macro = macro.replace("ヤ", r"{ k-ya }")
+    # macro = macro.replace("ユ", r"{ k-yu }")
+    # macro = macro.replace("ヨ", r"{ k-yo }")
 
-    # R Characters
-    macro = macro.replace("ラ", r"{ k-ra }")
-    macro = macro.replace("リ", r"{ k-ri }")
-    macro = macro.replace("ル", r"{ k-ru }")
-    macro = macro.replace("レ", r"{ k-re }")
-    macro = macro.replace("ロ", r"{ k-ro }")
+    # # R Characters
+    # macro = macro.replace("ラ", r"{ k-ra }")
+    # macro = macro.replace("リ", r"{ k-ri }")
+    # macro = macro.replace("ル", r"{ k-ru }")
+    # macro = macro.replace("レ", r"{ k-re }")
+    # macro = macro.replace("ロ", r"{ k-ro }")
 
-    # W Characters
-    macro = macro.replace("ワ", r"{ k-wa }")
-    macro = macro.replace("ヰ", r"{ k-wi }")
-    macro = macro.replace("ヱ", r"{ k-we }")
-    macro = macro.replace("ヲ", r"{ k-wo }")
+    # # W Characters
+    # macro = macro.replace("ワ", r"{ k-wa }")
+    # macro = macro.replace("ヰ", r"{ k-wi }")
+    # macro = macro.replace("ヱ", r"{ k-we }")
+    # macro = macro.replace("ヲ", r"{ k-wo }")
 
-    # G Characters
-    macro = macro.replace("ガ", r"{ k-ga }")
-    macro = macro.replace("ギ", r"{ k-gi }")
-    macro = macro.replace("グ", r"{ k-gu }")
-    macro = macro.replace("ゲ", r"{ k-ge }")
-    macro = macro.replace("ゴ", r"{ k-go }")
+    # # G Characters
+    # macro = macro.replace("ガ", r"{ k-ga }")
+    # macro = macro.replace("ギ", r"{ k-gi }")
+    # macro = macro.replace("グ", r"{ k-gu }")
+    # macro = macro.replace("ゲ", r"{ k-ge }")
+    # macro = macro.replace("ゴ", r"{ k-go }")
 
-    # Z Characters
-    macro = macro.replace("ザ", r"{ k-za }")
-    macro = macro.replace("ジ", r"{ k-ji }")
-    macro = macro.replace("ズ", r"{ k-zu }")
-    macro = macro.replace("ゼ", r"{ k-ze }")
-    macro = macro.replace("ゾ", r"{ k-zo }")
+    # # Z Characters
+    # macro = macro.replace("ザ", r"{ k-za }")
+    # macro = macro.replace("ジ", r"{ k-ji }")
+    # macro = macro.replace("ズ", r"{ k-zu }")
+    # macro = macro.replace("ゼ", r"{ k-ze }")
+    # macro = macro.replace("ゾ", r"{ k-zo }")
 
-    # D Characters
-    macro = macro.replace("ダ", r"{ k-da }")
-    macro = macro.replace("ヂ", r"{ k-dji }")
-    macro = macro.replace("ヅ", r"{ k-dzu }")
-    macro = macro.replace("デ", r"{ k-de }")
-    macro = macro.replace("ド", r"{ k-do }")
+    # # D Characters
+    # macro = macro.replace("ダ", r"{ k-da }")
+    # macro = macro.replace("ヂ", r"{ k-dji }")
+    # macro = macro.replace("ヅ", r"{ k-dzu }")
+    # macro = macro.replace("デ", r"{ k-de }")
+    # macro = macro.replace("ド", r"{ k-do }")
 
-    # B Characters
-    macro = macro.replace("バ", r"{ k-ba }")
-    macro = macro.replace("ビ", r"{ k-bi }")
-    macro = macro.replace("ブ", r"{ k-bu }")
-    macro = macro.replace("ベ", r"{ k-be }")
-    macro = macro.replace("ボ", r"{ k-bo }")
+    # # B Characters
+    # macro = macro.replace("バ", r"{ k-ba }")
+    # macro = macro.replace("ビ", r"{ k-bi }")
+    # macro = macro.replace("ブ", r"{ k-bu }")
+    # macro = macro.replace("ベ", r"{ k-be }")
+    # macro = macro.replace("ボ", r"{ k-bo }")
 
-    # P Characters
-    macro = macro.replace("パ", r"{ k-pa }")
-    macro = macro.replace("ピ", r"{ k-pi }")
-    macro = macro.replace("プ", r"{ k-pu }")
-    macro = macro.replace("ペ", r"{ k-pe }")
-    macro = macro.replace("ポ", r"{ k-po }")
+    # # P Characters
+    # macro = macro.replace("パ", r"{ k-pa }")
+    # macro = macro.replace("ピ", r"{ k-pi }")
+    # macro = macro.replace("プ", r"{ k-pu }")
+    # macro = macro.replace("ペ", r"{ k-pe }")
+    # macro = macro.replace("ポ", r"{ k-po }")
 
     return macro
 

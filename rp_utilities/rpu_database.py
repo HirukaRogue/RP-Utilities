@@ -435,7 +435,8 @@ class Database:
             if len(result) == 1:
                 if new_prefix:
                     await self.db.execute(
-                        "UPDATE macros SET macro_prefix = ? WHERE belong_id = ?", (new_prefix, id)
+                        "UPDATE macros SET macro_prefix = ? WHERE belong_id = ? and macro_prefix = ?",
+                        (new_prefix, id, old_prefix),
                     )
                     await self.db.commit()
 
@@ -443,7 +444,8 @@ class Database:
 
                 elif args:
                     await self.db.execute(
-                        "UPDATE macros SET command = ? WHERE belong_id = ?", (args, id)
+                        "UPDATE macros SET command = ? WHERE belong_id = ? and macro_prefix = ?",
+                        (args, id, old_prefix),
                     )
                     await self.db.commit()
 
@@ -453,7 +455,8 @@ class Database:
                     print(f"{result = }")
                     if result[0][4] == "server":
                         await self.db.execute(
-                            "UPDATE macros SET attribute = ? WHERE belong_id = ?", (macro_attr, id)
+                            "UPDATE macros SET attribute = ? WHERE belong_id = ? and macro_prefix = ?",
+                            (macro_attr, id, old_prefix),
                         )
                         await self.db.commit()
 
