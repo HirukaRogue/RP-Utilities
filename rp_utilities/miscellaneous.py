@@ -1,5 +1,7 @@
 from urllib.parse import urlparse
-from pyston import PystonClient, File
+import urllib
+import urllib.parse
+import requests
 
 
 def is_link(string):
@@ -18,17 +20,12 @@ def unify(A, B):
     return C
 
 
-async def mathematic(string):
-    calculation = f"""
-import sympy
-
-try:
-    result = sympy.sympify("{string}")
-except:
-    result = "Invalid Arguments"
-print(result)
-    """
-    calculator = File(calculation, filename="calculator.py")
-    sandbox = PystonClient()
-    output = await sandbox.execute("python", [calculator])
+def mathematic(string):
+    try:
+        quoted_string = urllib.parse.quote_plus(string)
+        calculator = f"https://api.mathjs.org/v4/?expr={quoted_string}"
+        response = requests.get(calculator)
+        output = response.text
+    except Exception:
+        output = "Timeout"
     return output

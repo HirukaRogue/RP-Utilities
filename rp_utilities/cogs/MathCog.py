@@ -18,7 +18,7 @@ class MathCog(commands.Cog):
     async def math(self, ctx, args: str):
         try:
             string_result = args
-            result = await mathematic(string_result)
+            result = mathematic(string_result)
             string_result = f"Problem: {args}\nSolution:{result}"
             embed = discord.Embed(description=string_result)
         except traceback:
@@ -37,7 +37,7 @@ class MathCog(commands.Cog):
         await interaction.response.defer(thinking=True)
         try:
             string_result = args
-            result = await mathematic(string_result)
+            result = mathematic(string_result)
             string_result = f"Problem: {args}\nSolution:{result}"
             embed = discord.Embed(description=string_result)
         except traceback:

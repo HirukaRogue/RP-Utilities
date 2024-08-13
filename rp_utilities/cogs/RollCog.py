@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import random
-from sympy import sympify
+from ..miscellaneous import mathematic
 import re
 import traceback
 
@@ -257,7 +257,7 @@ class RollCog(commands.Cog):
 
                 expression = expression + f"{indice[i]}"
 
-        sub_total = sympify(expression)
+        sub_total = mathematic(expression)
 
         return sub_total
 

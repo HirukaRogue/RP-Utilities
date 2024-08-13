@@ -1,12 +1,12 @@
 import traceback
 import random
 import lark
-from sympy import sympify
 import re
 from lark import Lark, Transformer
 import discord
 from .pagination import Paginator
 from .miscellaneous import is_link
+from .miscellaneous import mathematic
 
 
 ##################
@@ -139,7 +139,7 @@ async def calculate(indice, store):
 
             expression = expression + f"{indice[i]}"
 
-    sub_total = sympify(expression)
+    sub_total = mathematic(expression)
 
     return sub_total
 
@@ -195,7 +195,7 @@ async def sub_roll(inp):
 ### MATH MACRO ###
 ##################
 async def exemath(args: str, res_type: str):
-    result = sympify(args)
+    result = mathematic(args)
     result_string = f"{args} = {result}"
     if res_type == "only_result":
         return result
@@ -326,7 +326,7 @@ macro_grammar = Lark(
     sub_command: string
     content.5: string? (key_cont string?)*
     content2.5: args? (key_cont args?)*
-    key_cont.5: "{" (use_var | execute | command2 | formater | ascii_character) "}"
+    key_cont.5: "{" (use_var | execute | command2 | formater) "}"
     finput: "[" (("(" content ")" ("," "(" content ")")*) | content) "]"
     
     ### Text formatation
@@ -338,265 +338,6 @@ macro_grammar = Lark(
     spoiler: "s"
     line: "l"
 
-    ### Basic unicode support
-    ascii_character: cidilha | crase | agudo | tio | circumflexo | position | degree | invert_inter | invert_exc
-    position: a | o
-    invert_inter: "invert ?"
-    invert_exc: "invert !"
-    
-    cidilha: "cid"
-    degree: "deg"
-    
-    a: "pos-a"
-    o: "pos-o"
-
-    crase: "`" " " LETRA_PRIM | LETRA_SEC
-    agudo: "´" " " LETRA_PRIM | LETRA_SEC
-    tio: "~" " " (LETRA_PRIM | LETRA_ESPECIAL)
-    circumflexo: "^" " " LETRA_PRIM | LETRA_SEC
-
-    LETRA_PRIM: "a" | "o"
-    LETRA_SEC: "e" | "i" | "u"
-    LETRA_ESPECIAL: "n"
-    
-    ###Japanese unicode support
-    # japanese: hiragana | katakana
-    # hiragana: hwa | hwo | hn
-    #         | ha | hi | hu | he | ho
-    #         | hka | hki | hku | hke | hko
-    #         | hsa | hshi | hsu | hse | hso
-    #         | hta | hchi | htsu | hte | hto
-    #         | hna | hni | hnu | hne | hno
-    #         | hha | hhi | hfu | hhe | hho
-    #         | hma | hmi | hmu | hme | hmo
-    #         | hya | hyu | hyo
-    #         | hra | hri | hru | hre | hro
-    #         | hwa | hwi | hwe | hwo
-
-    # katakana: kwa | kwo | kn
-    #         | ka | ki | ku | ke | ko
-    #         | kka | kki | kku | kke | kko
-    #         | ksa | kshi | ksu | kse | kso
-    #         | kta | kchi | ktsu | kte | kto
-    #         | kna | kni | knu | kne | kno
-    #         | kha | khi | kfu | khe | kho
-    #         | kma | kmi | kmu | kme | kmo
-    #         | kya | kyu | kyo
-    #         | kra | kri | kru | kre | kro
-    #         | kwa | kwi | kwe | kwo
-        
-    # ## Hiragana
-    # # N
-    # hn: "h-n"
-
-    # # Basic silabic
-    # ha: "h-a"
-    # hi: "h-i"
-    # hu: "h-u"
-    # he: "h-e"
-    # ho: "h-o"
-
-    # # K
-    # hka: "h-ka"
-    # hki: "h-ki"
-    # hku: "h-ku"
-    # hke: "h-ke"
-    # hko: "h-ko"
-
-    # # S
-    # hsa: "h-sa"
-    # hshi: "h-shi"
-    # hsu: "h-su"
-    # hse: "h-se"
-    # hso: "h-so"
-    
-    # # T
-    # hta: "h-sa"
-    # hchi: "h-chi"
-    # htsu: "h-tsu"
-    # hte: "h-te"
-    # hto: "h-to"
-
-    # # N
-    # hna: "h-na"
-    # hni: "h-ni"
-    # hnu: "h-nu"
-    # hne: "h-ne"
-    # hno: "h-no"
-
-    # # H & F
-    # hha: "h-ha"
-    # hhi: "h-hi"
-    # hfu: "h-fu"
-    # hhe: "h-he"
-    # hho: "h-ho"
-
-    # # M
-    # hma: "h-ma"
-    # hmi: "h-mi"
-    # hmu: "h-mu"
-    # hme: "h-me"
-    # hmo: "h-mo"
-
-    # # Y
-    # hya: "h-ya"
-    # hyu: "h-yu"
-    # hyo: "h-yo"
-
-    # # R
-    # hra: "h-ra"
-    # hri: "h-ri"
-    # hru: "h-ru"
-    # hre: "h-re"
-    # hro: "h-ro"
-    
-    # # W
-    # hwa: "h-wa"
-    # hwi: "h-wi"
-    # hwe: "h-we"
-    # hwo: "h-wo"
-
-    # # G
-    # hga: "h-ga"
-    # hgi: "h-gi"
-    # hgu: "h-gu"
-    # hge: "h-ge"
-    # hgo: "h-go"
-
-    # # Z & J
-    # hza: "h-za"
-    # hji: "h-ji"
-    # hzu: "h-zu"
-    # hze: "h-ze"
-    # hzo: "h-zo"
-
-    # # D
-    # hda: "h-da"
-    # hdji: "h-dji"
-    # hdzu: "h-dzu"
-    # hde: "h-de"
-    # hdo: "h-do"
-
-    # # B
-    # hba: "h-ba"
-    # hbi: "h-bi"
-    # hbu: "h-bu"
-    # hbe: "h-be"
-    # hbo: "h-bo"
-
-    # # P
-    # hpa: "h-pa"
-    # hpi: "h-pi"
-    # hpu: "h-pu"
-    # hpe: "h-pe"
-    # hpo: "h-po"
-
-    # ## Katakana
-    # # N
-    # kn: "k-n"
-
-    # # Basic silabic
-    # ka: "k-a"
-    # ki: "k-i"
-    # ku: "k-u"
-    # ke: "k-e"
-    # ko: "k-o"
-
-    # # K
-    # kka: "k-ka"
-    # kki: "k-ki"
-    # kku: "k-ku"
-    # kke: "k-ke"
-    # kko: "k-ko"
-
-    # # S
-    # ksa: "k-sa"
-    # kshi: "k-shi"
-    # ksu: "k-su"
-    # kse: "k-se"
-    # kso: "k-so"
-    
-    # # T
-    # kta: "k-sa"
-    # kchi: "k-chi"
-    # ktsu: "k-tsu"
-    # kte: "k-te"
-    # kto: "k-to"
-
-    # # N
-    # kna: "k-na"
-    # kni: "k-ni"
-    # knu: "k-nu"
-    # kne: "k-ne"
-    # kno: "k-no"
-
-    # # H & F
-    # kha: "k-ha"
-    # khi: "k-hi"
-    # kfu: "k-fu"
-    # khe: "k-he"
-    # kho: "k-ho"
-
-    # # M
-    # kma: "k-ma"
-    # kmi: "k-mi"
-    # kmu: "k-mu"
-    # kme: "k-me"
-    # kmo: "k-mo"
-
-    # # Y
-    # kya: "k-ya"
-    # kyu: "k-yu"
-    # kyo: "k-yo"
-
-    # # R
-    # kra: "k-ra"
-    # kri: "k-ri"
-    # kru: "k-ru"
-    # kre: "k-re"
-    # kro: "k-ro"
-    
-    # # W
-    # kwa: "k-wa"
-    # kwi: "k-wi"
-    # kwe: "k-we"
-    # kwo: "k-wo"
-
-    # # G
-    # kga: "k-ga"
-    # kgi: "k-gi"
-    # kgu: "k-gu"
-    # kge: "k-ge"
-    # kgo: "k-go"
-
-    # # Z & J
-    # kza: "k-za"
-    # kji: "k-ji"
-    # kzu: "k-zu"
-    # kze: "k-ze"
-    # kzo: "k-zo"
-
-    # # D
-    # kda: "k-da"
-    # kdji: "k-dji"
-    # kdzu: "k-dzu"
-    # kde: "k-de"
-    # kdo: "k-do"
-
-    # # B
-    # kba: "k-ba"
-    # kbi: "k-bi"
-    # kbu: "k-bu"
-    # kbe: "k-be"
-    # kbo: "k-bo"
-
-    # # P
-    # kpa: "k-pa"
-    # kpi: "k-pi"
-    # kpu: "k-pu"
-    # kpe: "k-pe"
-    # kpo: "k-po"
-
     ### Main Components
     string: CHAR_CHAIN+
     args: EXPRESSIONS+
@@ -607,16 +348,7 @@ macro_grammar = Lark(
                 | "+" | "-" | "*" | "/" | "."
                 | "(" | ")" | "#"
     CHAR_CHAIN: CHAR+
-    CHAR: "0".."9" | "a".."z" | "A".."Z" | SYMBOLS | CHINESE | JAPANESE
-    SYMBOLS: "!" | "#" | "$" | "%" | "&" | "\\" | "*" | "+" | "," | "-" | "." | "/" | ":" | ";" 
-           | "<" | "=" | ">" | "?" | "@" | "^" | "_" | "`" | "|" | "~" | "¨" | "¢" | "¬" | "§"
-    CHINESE: /[u"\u4e00-\u9fa5"]/
-    JAPANESE: HIRAGANA | KATAKANA | KANJI | ROMANJI | JPUNCTUATION
-    HIRAGANA: /[u"\u3040-\u309f"]/
-    KATAKANA: /[u"\u30a0-\u30ff"]/
-    KANJI: /[u"\uff00-\uffef"]/
-    ROMANJI: /[u"\u3040-\u309f"]/
-    JPUNCTUATION: /[u"\u3000-\u303f"]/
+    CHAR: /[^(){}\[\] ]/
     number: SIGNED_NUMBER 
     ws: WS
 
@@ -650,39 +382,39 @@ async def conversor(macro: str):
 
     ### This part is ASCII transformation
     # special characters
-    macro = macro.replace("ç", r"{ cid }")
+    # macro = macro.replace("ç", r"{ cid }")
 
     # punctuation
-    macro = macro.replace("à", r"{ ` a }")
-    macro = macro.replace("è", r"{ ` e }")
-    macro = macro.replace("ì", r"{ ` i }")
-    macro = macro.replace("ò", r"{ ` o }")
-    macro = macro.replace("ù", r"{ ` u }")
+    # macro = macro.replace("à", r"{ ` a }")
+    # macro = macro.replace("è", r"{ ` e }")
+    # macro = macro.replace("ì", r"{ ` i }")
+    # macro = macro.replace("ò", r"{ ` o }")
+    # macro = macro.replace("ù", r"{ ` u }")
 
-    macro = macro.replace("á", r"{ ´ a }")
-    macro = macro.replace("é", r"{ ´ e }")
-    macro = macro.replace("í", r"{ ´ i }")
-    macro = macro.replace("ó", r"{ ´ o }")
-    macro = macro.replace("ú", r"{ ´ u }")
+    # macro = macro.replace("á", r"{ ´ a }")
+    # macro = macro.replace("é", r"{ ´ e }")
+    # macro = macro.replace("í", r"{ ´ i }")
+    # macro = macro.replace("ó", r"{ ´ o }")
+    # macro = macro.replace("ú", r"{ ´ u }")
 
-    macro = macro.replace("ã", r"{ ~ a }")
-    macro = macro.replace("ñ", r"{ ~ n }")
-    macro = macro.replace("õ", r"{ ~ o }")
+    # macro = macro.replace("ã", r"{ ~ a }")
+    # macro = macro.replace("ñ", r"{ ~ n }")
+    # macro = macro.replace("õ", r"{ ~ o }")
 
-    macro = macro.replace("â", r"{ ^ a }")
-    macro = macro.replace("ê", r"{ ^ e }")
-    macro = macro.replace("î", r"{ ^ i }")
-    macro = macro.replace("ô", r"{ ^ o }")
-    macro = macro.replace("û", r"{ ^ u }")
+    # macro = macro.replace("â", r"{ ^ a }")
+    # macro = macro.replace("ê", r"{ ^ e }")
+    # macro = macro.replace("î", r"{ ^ i }")
+    # macro = macro.replace("ô", r"{ ^ o }")
+    # macro = macro.replace("û", r"{ ^ u }")
 
     # positional symbols
-    macro = macro.replace("ª", r"{ pos-a }")
-    macro = macro.replace("º", r"{ pos-o }")
-    macro = macro.replace("°", r"{ deg }")
+    # macro = macro.replace("ª", r"{ pos-a }")
+    # macro = macro.replace("º", r"{ pos-o }")
+    # macro = macro.replace("°", r"{ deg }")
 
     # inverted punctuations
-    macro = macro.replace("¡", r"{ invert ! }")
-    macro = macro.replace("¿", r"{ invert ? }")
+    # macro = macro.replace("¡", r"{ invert ! }")
+    # macro = macro.replace("¿", r"{ invert ? }")
 
     ### Japanese
     ## Hiragana
