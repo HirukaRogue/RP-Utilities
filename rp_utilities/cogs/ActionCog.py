@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 
 
 class ActionCog(commands.Cog):
@@ -26,27 +27,81 @@ class ActionCog(commands.Cog):
         description="Annonymous mode toggle to show or hide your nick on character actions",
     )
     async def _annonymous_mode(self, ctx):
-        await ctx.send(
-            "Anonymous mode makes your tupper messages being anonymous, type the command with switch to switch your anonymous mode"
+        embed = discord.Embed(
+            title="Anonymous Mode 🕵️",
+            description="Makes your tupper messages being anonymous, type the command with switch to switch your anonymous mode",
         )
-
-    @_annonymous_mode.command(name="switch", description="Switch your annonymous mode to on or off")
-    async def _annonymous_mode_switch(self, ctx):
-        anonimity = await ctx.bot.database.switch_anonimous_mode(ctx.author.id)
-
-        if anonimity:
-            embed = discord.Embed(description="You are now in Anonymous Mode")
-        else:
-            embed = discord.Embed(description="You are not in Anonymous Mode now")
 
         await ctx.send(embed=embed)
 
+    @_annonymous_mode.command(name="switch", description="Switch your annonymous mode to on or off")
+    async def _annonymous_mode_switch(self, ctx):
+        await ctx.defer(ephemeral=True)
+        anonimity = await ctx.bot.database.switch_anonimous_mode(ctx.author.id)
+
+        if anonimity:
+            embed = discord.Embed(
+                title="🕵️ Anonymous Mode", description="You are now in Anonymous Mode"
+            )
+        else:
+            embed = discord.Embed(
+                title="🕵️ Anonymous Mode", description="You are not in Anonymous Mode now"
+            )
+
+        await ctx.send(embed=embed)
+
+    @app_commands.command(
+        name="auto-proxy",
+        description="Automate your roleplay with a determined character",
+    )
+    @app_commands.describe(prefix="your character prefix, ignores if you want to disable")
+    async def _auto_proxy(self, interaction: discord.Interaction, prefix: str | None = None):
+        await interaction.response.defer(ephemeral=True)
+        result = await self.client.database.set_auto_proxy(
+            user_id=interaction.user.id, proxy_prefix=prefix
+        )
+
+        if result == "ERROR":
+            embed = discord.Embed(
+                title="auto proxy failed ❌",
+                description=f"The character with prefix {prefix} don't exist",
+            )
+        elif prefix is None:
+            embed = discord.Embed(title="auto proxy Sucess ✅", description="Auto proxy disabled")
+        else:
+            embed = discord.Embed(
+                title="auto proxy Sucess ✅", description=f"Auto proxy enabled for prefix {prefix}"
+            )
+
+        await interaction.followup.send(embed=embed)
+
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author == self.client.user or message.webhook_id:
+        if (
+            message.author == self.client.user
+            or message.webhook_id
+            or message.content.startswith("->")
+            or message.content.startswith("+>")
+        ):
             return
 
-        message_instance = await self.message_instances(message.author.id, message.content)
+        message_check = message.content.split(":", 1)
+        message_check[0] = message_check[0] + ":"
+        check = await self.client.database.quick_search_default_character(
+            user_id=message.author.id, prompt_prefix=message_check[0]
+        )
+        check2 = await self.client.database.check_auto_proxy(user_id=message.author.id)
+        if (
+            check is None
+            and check2["proxy_mode"]
+            and not message.content.startswith("=>switch->")
+            and not message.content.startswith("=>edit->")
+        ):
+            message_content = check2["prefix"] + message.content
+        else:
+            message_content = message.content
+
+        message_instance = await self.message_instances(message.author.id, message_content)
 
         if message.reference:
             if message.reference.resolved.webhook_id:
@@ -126,7 +181,6 @@ class ActionCog(commands.Cog):
 
             respose = ""
             if message.reference:
-                print("entered")
                 ref = (
                     message.reference
                     if isinstance(message.reference.resolved, discord.Message)

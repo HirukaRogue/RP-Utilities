@@ -49,6 +49,14 @@ CREATE TABLE IF NOT EXISTS macro_cache (
     )
 """
 
+AUTO_PROXY = """
+CREATE TABLE IF NOT EXISTS auto_proxy (
+    user_id INT,
+    proxy_mode INT,
+    proxy_prefix TEXT
+    )
+"""
+
 
 class Database:
 
@@ -61,6 +69,7 @@ class Database:
         await self.db.execute(DEFAULT_CHARACTER_TABLE)
         await self.db.execute(MACRO_TABLE)
         await self.db.execute(MACRO_CACHE)
+        await self.db.execute(AUTO_PROXY)
         await self.db.commit()
 
         print("Database connected!")
@@ -134,10 +143,25 @@ class Database:
 
         result = await cursor.fetchone()
 
-        if result is None or result[1] == 0:
-            return False
-        else:
+        if result is None:
+            await self.db.execute(
+                "INSERT INTO anonimity (user_id, anonymous) VALUES (?, ?)", (user_id, True)
+            )
+
             return True
+
+        if not result[0]:
+            await self.db.execute(
+                "UPDATE anonimity SET anonymous = ? WHERE user_id = ?",
+                (True, user_id),
+            )
+            return True
+        else:
+            await self.db.execute(
+                "UPDATE anonimity SET anonymous = ? WHERE user_id = ?",
+                (False, user_id),
+            )
+            return False
 
     ### WEBHOOK LOG ###
     # to keep track which webhook belongs to the log serves well
@@ -452,7 +476,6 @@ class Database:
                     return "SUCESS"
 
                 elif macro_attr:
-                    print(f"{result = }")
                     if result[0][4] == "server":
                         await self.db.execute(
                             "UPDATE macros SET attribute = ? WHERE belong_id = ? and macro_prefix = ?",
@@ -508,8 +531,6 @@ class Database:
         else:
             cache = cache + var
 
-        print("cache register Executed")
-
         await self.db.execute(
             "INSERT INTO macro_cache (id, var) VALUES (?, ?)",
             (id, var),
@@ -531,5 +552,47 @@ class Database:
         cursor = await self.db.execute("SELECT cache FROM macro_cache WHERE id = ?", (id,))
 
         if cursor is not None:
-            await self.db.execute("DELETE FROM cache WHERE id = ?", (id))
+            await self.db.execute("DELETE FROM cache WHERE id = ?", (id,))
             await self.db.commit()
+
+    async def set_auto_proxy(self, *, user_id: int, proxy_prefix: str | None):
+        cursor = await self.db.execute("SELECT * FROM auto_proxy WHERE user_id = ?", (user_id,))
+        result = await cursor.fetchone()
+
+        if proxy_prefix is not None:
+            exist_character = await self.quick_search_default_character(
+                user_id=user_id, prompt_prefix=proxy_prefix
+            )
+
+            if exist_character is None:
+                return "ERROR"
+
+        is_proxy = False if proxy_prefix is None else True
+        prefix = proxy_prefix if proxy_prefix is not None else ""
+
+        if result is None:
+            await self.db.execute(
+                "INSERT INTO auto_proxy (user_id, proxy_mode, proxy_prefix) VALUES (?, ?, ?)",
+                (user_id, is_proxy, prefix),
+            )
+
+            return "SUCESS"
+
+        await self.db.execute(
+            "UPDATE auto_proxy SET proxy_prefix = ?, proxy_mode = ? WHERE user_id = ?",
+            (prefix, is_proxy, user_id),
+        )
+
+        return "SUCESS"
+
+    async def check_auto_proxy(self, *, user_id):
+        cursor = await self.db.execute("SELECT * FROM auto_proxy WHERE user_id = ?", (user_id,))
+
+        result = await cursor.fetchone()
+
+        if result is not None:
+            data = {"proxy_mode": result[1], "prefix": result[2]}
+        else:
+            data = {"proxy_mode": 0, "prefix": ""}
+
+        return data

@@ -45,7 +45,6 @@ class MacroCog(commands.Cog):
 
         if not isinstance(result, tuple):
             for i in result:
-                print(f"{i = }")
                 z = i[0] or None
                 if isinstance(z, discord.Embed):
                     await message.channel.send(embed=z)
@@ -108,7 +107,6 @@ class MacroCog(commands.Cog):
             if ctx.author.guild_permissions.administrator:
                 search_pivot = await ctx.bot.database.search_macro(id=server, search=search)
                 if search_pivot:
-                    print(f"{search_pivot = }")
                     search_result = unify(search_result, search_pivot)
 
         prompt_result = "No results found" if search_result is None else prompt_result

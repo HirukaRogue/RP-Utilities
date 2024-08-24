@@ -185,7 +185,6 @@ class RollCog(commands.Cog):
                 args_result[0] = mark[1]
                 mark.pop(1)
                 for z in range(0, int(mark[0])):
-                    print("New grounds")
                     # here will start the multi-rolling
                     if z > 0:
                         resp_sub = resp_sub + f"{z+1}#"
