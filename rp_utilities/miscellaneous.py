@@ -2,6 +2,9 @@ from urllib.parse import urlparse
 import urllib
 import urllib.parse
 import requests
+import d20
+import traceback
+import re
 
 
 def is_link(string):
@@ -29,3 +32,31 @@ def mathematic(string):
     except Exception:
         output = "Timeout"
     return output
+
+
+def roll(string, type, repeat: int = 1):
+    pattern = r"`([^`]*)`"
+    try:
+        sub_result = ""
+        for i in range(0, repeat):
+            if i < repeat - 1:
+                sub_result = sub_result + str(d20.roll(string)) + "\n"
+            else:
+                sub_result = sub_result + str(d20.roll(string))
+        if type == "all":
+            piv = re.findall(pattern, sub_result)
+            secondary_result = [float(i) for i in piv]
+            result = [sub_result, sum(secondary_result)]
+        elif type == "only_result":
+            piv = re.findall(pattern, sub_result)
+            secondary_result = [float(i) for i in piv]
+            result = sum(secondary_result)
+        elif type == "only_string":
+            result = sub_result
+        else:
+            result = "Invalid Argument"
+    except Exception:
+        traceback.print_exc
+        result = "Invalid Argument"
+
+    return result

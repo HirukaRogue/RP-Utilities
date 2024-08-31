@@ -1,10 +1,8 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
+from ..miscellaneous import roll
 import random
-from ..miscellaneous import mathematic
-import re
-import traceback
 
 
 class RollCog(commands.Cog):
@@ -17,114 +15,37 @@ class RollCog(commands.Cog):
 
     @commands.command(aliases=["r", "diceroll", "dice_roll", "dice"], help="roll")
     async def roll(self, ctx, args: str):
-        # define boolean see if the code will work or not
-        not_failure = True
-        # start to make the roll
-        # indice = index to store the operator variables, willl be
-        # useful to know which operation the variable will do when calculating the total
-        indice = list()
-        # cont is the that will store which values will
-        # interact with each other
-        # function to detect the interaction through numbers and
-        # which numbers will interact with the operator
-        for indz in args:
-            if indz in ("+", "-", "*", "/", "(", ")", "[", "]"):
-                indice.append(indz)
+        await ctx.defer(ephemeral=True)
+        if "#" in args:
+            parts = args.split("#")
 
-        # gather dice roll and numbers to calculate, sotring them into args_result, being args result the raw input
-        # pattern = re.compile(r"^\[.+\]$")
-        # args_sub_result = pattern.findall(args)
-        # pattern = re.compile(r"^\(.+\)$")
-        pattern = re.compile(r"[+\-*/]|(\[|\]|\(|\))")
-        args_result = pattern.split(args)
-        args_result = [elem for elem in args_result if elem not in [None, "(", ")", "[", "]"]]
-
-        # total is the variable to store the total of the operation
-        total = 0
-        # testing the # occurance
-        for y in args_result:
-            if "#" in y:
-                if y != args_result[0]:
-                    not_failure = False
-                    break
-
-        if not_failure:
-            resp_sub = ""
-            # store will store the roll results as in an Array
-            store = list()
-            total = 0
-            if "#" in args_result[0]:
-                indice_pivot = indice
-                # mark will mark how much occurances it will be for the multi-rollings,
-                # mark will only store the first value
-                mark = args_result[0].split("#")
-                args_result[0] = mark[1]
-                mark.pop(1)
-                for z in range(0, int(mark[0])):
-                    # here will start the multi-rolling
-                    if z > 0:
-                        resp_sub = resp_sub + f"{z+1}#"
-                    else:
-                        resp_sub = f"{z+1}#"
-                    for indx, x in enumerate(args_result):
-                        # this is the subroll of keach multiroll from a sequence of rolls
-                        if indx > 0:
-                            resp_sub = resp_sub + f"{indice[indx-1]} {x}"
-                        else:
-                            resp_sub = resp_sub + f"{x}"
-                        if x:
-                            roll_result = await self.sub_roll(x)
-                            if not resp_sub:
-                                resp_sub = f"{x}"
-                                for roll_index in roll_result[0]:
-                                    resp_sub = resp_sub + f"({roll_index})"
-                                resp_sub = resp_sub + f"[{roll_result[1]}]"
-                            else:
-                                for roll_index in roll_result[0]:
-                                    resp_sub = resp_sub + f"({roll_index})"
-                                resp_sub = resp_sub + f"[{roll_result[1]}]"
-                                store.append(roll_result[1])
-                        else:
-                            store.append(x)
-                    sub_total = await self.calculate(indice, store)
-                    store.clear()
-                    total = total + sub_total
-                    resp_sub = resp_sub + f"<[{sub_total}]>" + "\n"
+            if parts[0].isnumeric:
+                num_str = roll(parts[1], "only_string", int(parts[0]))
             else:
-                # when there aren't a # it will initiate a single roll
-                resp_sub = ""
-                for indx, x in enumerate(args_result):
-                    # this will be a regular roll for each dice in the line, will be stored into store
-                    if indx > 0:
-                        resp_sub = resp_sub + f"{indice[indx-1]} {x}"
-                    if x:
-                        roll_result = await self.sub_roll(x)
-                        if not resp_sub:
-                            resp_sub = f"{x}"
-                            for roll_index in roll_result[0]:
-                                resp_sub = resp_sub + f"({roll_index})"
-                            resp_sub = resp_sub + f"[{roll_result[1]}]"
-                        else:
-                            for roll_index in roll_result[0]:
-                                resp_sub = resp_sub + f"({roll_index})"
-                            resp_sub = resp_sub + f"[{roll_result[1]}]"
-                        store.append(roll_result[1])
-                    else:
-                        store.append(x)
+                num_str = "Invalid Argument"
 
-                # the total will be cauculated by the calculate function
-                total = await self.calculate(indice, store)
+        else:
+            num_str = roll(args, "only_string")
+        embed = discord.Embed(title="🎲 Roll result", description=num_str)
+        await ctx.send(embed=embed)
 
-            # resp_total will be the output of the roll
-            resp_total = f"```\n{resp_sub}\n```\n:game_die: **__Total__** = {total}"
-            embed = discord.Embed(title="Roll Result", description=resp_total)
-
+    @commands.command(aliases=["c", "coin"])
+    async def coin_flip(self, ctx, instances: str | None = None):
+        if instances is None:
+            result = random.choice(["heads", "tails"])
+            embed = discord.Embed(title="🪙 Coin Flip", description=result)
             await ctx.send(embed=embed)
+            return
 
-        if not resp_total:
-            resp_total = "Error! Invalid arguments"
+        if instances.isnumeric:
+            max = int(instances)
+            result = [random.choice(["heads", "tails"]) for _ in range(0, max)]
+            embed = discord.Embed(title="🪙 Coin Flip", description=result)
+            await ctx.send(embed=embed)
+            return
 
-            await ctx.send(resp_total)
+        embed = discord.Embed(title="🪙 Coin Flip", description="Invalid Input")
+        await ctx.send(embed=embed)
 
     @app_commands.command(
         name="roll", description="roll 1 or more dices of any sides, can use DnD arguments"
@@ -132,179 +53,38 @@ class RollCog(commands.Cog):
     @app_commands.describe(args="set the arguments of dice roll, like 1d20+5")
     async def roll_slash(self, interaction: discord.Interaction, args: str):
         await interaction.response.defer(thinking=True)
-        # define boolean see if the code will work or not
-        not_failure = True
-        # start to make the roll
-        # indice = index to store the operator variables, willl be
-        # useful to know which operation the variable will do when calculating the total
-        indice = list()
-        # cont is the that will store which values will
-        # interact with each other
-        # function to detect the interaction through numbers and
-        # which numbers will interact with the operator
-        for indz in args:
-            if (
-                indz == "+"
-                or indz == "-"
-                or indz == "*"
-                or indz == "/"
-                or indz == "("
-                or indz == ")"
-                or indz == "["
-                or indz == "]"
-            ):
-                indice.append(indz)
+        if "#" in args:
+            parts = args.split("#")
 
-        # gather dice roll and numbers to calculate, sotring them into args_result, being args result the raw input
-        # pattern = re.compile(r"^\[.+\]$")
-        # args_sub_result = pattern.findall(args)
-        # pattern = re.compile(r"^\(.+\)$")
-        pattern = re.compile(r"[+\-*/]|(\[|\]|\(|\))")
-        args_result = pattern.split(args)
-        args_result = [elem for elem in args_result if elem not in [None, "(", ")", "[", "]"]]
-
-        # total is the variable to store the total of the operation
-        total = 0
-        # testing the # occurance
-        for y in args_result:
-            if "#" in y:
-                if y != args_result[0]:
-                    not_failure = False
-                    break
-
-        if not_failure:
-            resp_sub = ""
-            # store will store the roll results as in an Array
-            store = list()
-            total = 0
-            if "#" in args_result[0]:
-                indice_pivot = indice
-                # mark will mark how much occurances it will be for the multi-rollings,
-                # mark will only store the first value
-                mark = args_result[0].split("#")
-                args_result[0] = mark[1]
-                mark.pop(1)
-                for z in range(0, int(mark[0])):
-                    # here will start the multi-rolling
-                    if z > 0:
-                        resp_sub = resp_sub + f"{z+1}#"
-                    else:
-                        resp_sub = f"{z+1}#"
-                    for indx, x in enumerate(args_result):
-                        # this is the subroll of keach multiroll from a sequence of rolls
-                        if indx > 0:
-                            resp_sub = resp_sub + f"{indice[indx-1]} {x}"
-                        else:
-                            resp_sub = resp_sub + f"{x}"
-                        if x:
-                            roll_result = await self.sub_roll(x)
-                            if not resp_sub:
-                                resp_sub = f"{x}"
-                                for roll_index in roll_result[0]:
-                                    resp_sub = resp_sub + f"({roll_index})"
-                                resp_sub = resp_sub + f"[{roll_result[1]}]"
-                            else:
-                                for roll_index in roll_result[0]:
-                                    resp_sub = resp_sub + f"({roll_index})"
-                                resp_sub = resp_sub + f"[{roll_result[1]}]"
-                                store.append(roll_result[1])
-                        else:
-                            store.append(x)
-                    sub_total = await self.calculate(indice, store)
-                    store.clear()
-                    total = total + sub_total
-                    resp_sub = resp_sub + f"<[{sub_total}]>" + "\n"
+            if parts[0].isnumeric:
+                num_str = roll(parts[1], "only_string", int(parts[0]))
             else:
-                # when there aren't a # it will initiate a single roll
-                resp_sub = ""
-                for indx, x in enumerate(args_result):
-                    # this will be a regular roll for each dice in the line, will be stored into store
-                    if indx > 0:
-                        resp_sub = resp_sub + f"{indice[indx-1]} {x}"
-                    if x:
-                        roll_result = await self.sub_roll(x)
-                        if not resp_sub:
-                            resp_sub = f"{x}"
-                            for roll_index in roll_result[0]:
-                                resp_sub = resp_sub + f"({roll_index})"
-                            resp_sub = resp_sub + f"[{roll_result[1]}]"
-                        else:
-                            for roll_index in roll_result[0]:
-                                resp_sub = resp_sub + f"({roll_index})"
-                            resp_sub = resp_sub + f"[{roll_result[1]}]"
-                        store.append(roll_result[1])
-                    else:
-                        store.append(x)
+                num_str = "Invalid Argument"
 
-                # the total will be cauculated by the calculate function
-                total = await self.calculate(indice, store)
-
-            # resp_total will be the output of the roll
-            resp_total = f"```\n{resp_sub}\n```\n:game_die: **__Total__** = {total}"
-            embed = discord.Embed(title="Roll Result", description=resp_total)
-
-            await interaction.followup.send(embed=embed)
-
-    async def calculate(self, indice, store):
-        sub_total = 0
-        expression = ""
-        for i in range(0, len(store)):
-            expression = expression + f"{store[i]}"
-            if i < len(indice):
-                if store[i] != "" and (indice[i] == "(" or indice[i] == "["):
-                    expression = expression + "*"
-
-                expression = expression + f"{indice[i]}"
-
-        sub_total = mathematic(expression)
-
-        return sub_total
-
-    async def sub_roll(self, inp):
-        # This function will make thje rollings
-        # result will be the rolls result, total will be the sum of the results
-        # and meta will be results and total stored as metadata
-        total = 0
-        meta = list()
-        result = list()
-
-        if "d" in inp or "D" in inp:
-            # if there is a d in inp it will detect as a dice
-            pivot = inp.split("d")
-            if pivot[1] == "f" or pivot[1] == "F":
-                pivot2 = [random.randint(1, 6) for _ in range(int(pivot[0]))]
-                for i in pivot2:
-                    if i == 1 or i == 2:
-                        result.append("-")
-                    elif i == 5 or i == 6:
-                        result.append("+")
-                    else:
-                        result.append(0)
-            elif pivot[1] == "c" or pivot[1] == "C":
-                pivot2 = [random.randint(0, 1) for _ in range(int(pivot[0]))]
-                for i in pivot2:
-                    if i == 0:
-                        result.append("Heads")
-                    else:
-                        result.append("Tails")
-            else:
-                result = [random.randint(1, int(pivot[1])) for _ in range(int(pivot[0]))]
         else:
-            # if it's not a dice it will be a raw value
-            total = int(inp)
+            num_str = roll(args, "only_string")
+        embed = discord.Embed(title="🎲 Roll result", description=num_str)
+        await interaction.followup.send(embed=embed)
 
-        if result:
-            for x in result:
-                if x == "+":
-                    total = total + 1
-                elif x == "-":
-                    total = total - 1
-                elif x == "Heads" or x == "Tails":
-                    total = total
-                else:
-                    total = total + x
-        meta = [result, total]
-        return meta
+    @app_commands.command(name="coin_flip", description="flip a number of coins or just 1 coin")
+    @app_commands.describe(instances="number of coins to flip, ignore to flip just once")
+    async def coin_flip_slash(self, interaction: discord.Interaction, instances: str | None = None):
+        await interaction.response.defer(thinking=True)
+        if instances is None:
+            result = random.choice(["heads", "tails"])
+            embed = discord.Embed(title="🪙 Coin Flip", description=result)
+            await interaction.followup.send(embed=embed)
+            return
+
+        if instances.isnumeric:
+            max = int(instances)
+            result = [random.choice(["heads", "tails"]) for _ in range(0, max)]
+            embed = discord.Embed(title="🪙 Coin Flip", description=result)
+            await interaction.followup.send(embed=embed)
+            return
+
+        embed = discord.Embed(title="🪙 Coin Flip", description="Invalid Input")
+        await interaction.followup.send(embed=embed)
 
 
 async def setup(client):

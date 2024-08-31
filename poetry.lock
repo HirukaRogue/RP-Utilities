@@ -230,6 +230,17 @@ files = [
 ]
 
 [[package]]
+name = "cachetools"
+version = "5.5.0"
+description = "Extensible memoizing collections and decorators"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "cachetools-5.5.0-py3-none-any.whl", hash = "sha256:02134e8439cdc2ffb62023ce1debca2944c3f289d66bb17ead3ab3dede74b292"},
+    {file = "cachetools-5.5.0.tar.gz", hash = "sha256:2cc24fb4cbe39633fb7badd9db9ca6295d766d9c2995f245725a46715d050f2a"},
+]
+
+[[package]]
 name = "certifi"
 version = "2024.7.4"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -363,6 +374,21 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
+
+[[package]]
+name = "d20"
+version = "1.1.2"
+description = "A formal grammar-based dice parser and roller for D&D and other dice systems."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "d20-1.1.2-py3-none-any.whl", hash = "sha256:1195bfc643aa4bd984bf6d26327491795272bfab8b19ac15108b4352a9de3166"},
+    {file = "d20-1.1.2.tar.gz", hash = "sha256:53bc0ac375deeb84bcbb736ef5b3a72656a265732720fa3e5548dd5b38cb20f5"},
+]
+
+[package.dependencies]
+cachetools = ">=3.1.0"
+lark-parser = ">=0.9.0,<0.10.0"
 
 [[package]]
 name = "discord-ext-menus"
@@ -560,6 +586,19 @@ files = [
 atomic-cache = ["atomicwrites"]
 interegular = ["interegular (>=0.3.1,<0.4.0)"]
 nearley = ["js2py"]
+regex = ["regex"]
+
+[[package]]
+name = "lark-parser"
+version = "0.9.0"
+description = "a modern parsing library"
+optional = false
+python-versions = "*"
+files = [
+    {file = "lark-parser-0.9.0.tar.gz", hash = "sha256:9e7589365d6b6de1cca40b0eaec31104a3fb96a37a11a9dfd5098e95b50aa6cd"},
+]
+
+[package.extras]
 regex = ["regex"]
 
 [[package]]
@@ -1038,4 +1077,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "83bb04e5e9f714a6fad53755bafa532a5e01c405d99ad6337021b4f4bfd1f007"
+content-hash = "d532c7bbfdb8a7913475bd82191cdcae85a470ab8a2f97c42c762aa21e2170b1"
