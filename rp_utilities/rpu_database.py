@@ -130,7 +130,12 @@ class Database:
 
         result = await cursor.fetchone()
 
-        if result is None or result[1] == 0:
+        print(f"{result = }")
+
+        if result is None:
+            return False
+
+        if result[0] == 0:
             return False
         else:
             return True

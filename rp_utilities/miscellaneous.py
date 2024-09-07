@@ -55,7 +55,7 @@ def roll(string, type, repeat: int = 1):
             result = sub_result
         else:
             result = "Invalid Argument"
-    except Exception:
+    except traceback:
         traceback.print_exc
         result = "Invalid Argument"
 
