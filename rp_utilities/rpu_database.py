@@ -290,6 +290,8 @@ class Database:
 
         result = list(i for i in cursor)
 
+        print(f"{result = }")
+
         if len(result) > 0:
             if len(result) == 1:
                 if name:
@@ -299,12 +301,17 @@ class Database:
                     )
                     await self.db.commit()
 
+                    print("deleted")
+
                     return "SUCESS"
                 elif prompt_prefix:
                     await self.db.execute(
-                        "DELETE FROM default_characters WHERE user_id = ? and char_name = ?",
-                        (user_id, name),
+                        "DELETE FROM default_characters WHERE user_id = ? and prompt = ?",
+                        (user_id, prompt_prefix),
                     )
+
+                    print("deleted")
+
                     await self.db.commit()
                 return "SUCESS"
             else:
