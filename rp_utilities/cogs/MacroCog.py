@@ -45,7 +45,12 @@ class MacroCog(commands.Cog):
 
         if not isinstance(result, tuple):
             for i in result:
-                z = i[0] or None
+                print(f"{i = }")
+                if isinstance(i, list):
+                    z = i[0]
+                else:
+                    z = i or None
+
                 if isinstance(z, discord.Embed):
                     await message.channel.send(embed=z)
                 elif isinstance(z, Paginator):

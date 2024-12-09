@@ -533,6 +533,8 @@ class Database:
         cursor = await self.db.execute("SELECT cache FROM macro_cache WHERE id = ?", (id,))
         result = await cursor.fetchone()
 
+        print(f"{var = }")
+
         if result is not None:
             cache = result[0]
         else:
@@ -544,8 +546,8 @@ class Database:
             cache = cache + var
 
         await self.db.execute(
-            "INSERT INTO macro_cache (id, var) VALUES (?, ?)",
-            (id, var),
+            "INSERT INTO macro_cache (id, cache) VALUES (?, ?)",
+            (id, cache),
         )
         await self.db.commit()
 
@@ -564,7 +566,7 @@ class Database:
         cursor = await self.db.execute("SELECT cache FROM macro_cache WHERE id = ?", (id,))
 
         if cursor is not None:
-            await self.db.execute("DELETE FROM cache WHERE id = ?", (id,))
+            await self.db.execute("DELETE FROM macro_cache WHERE id = ?", (id,))
             await self.db.commit()
 
     async def set_auto_proxy(self, *, user_id: int, proxy_prefix: str | None):

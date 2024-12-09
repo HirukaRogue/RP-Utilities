@@ -14,8 +14,6 @@ from .miscellaneous import roll
 ### ROLL MACRO ###
 ##################
 async def exeroll(args, res_type):
-    print(f"{res_type = }")
-
     if "#" in args:
         parts = args.split("#")
 
@@ -56,18 +54,15 @@ async def exeselect(args):
 ### ECHO MACRO ###
 ##################
 async def exeecho(args):
-    print(f"{args = }")
     if len(args) == 1:
         y = await trim(args)
         y = y.replace("\\n", "\n")
         y = y.replace("\\0", " ")
-        print(f"{y = }")
         pages = discord.Embed(description=y)
     else:
         chapters = list()
         for i in args:
             y = await trim(i)
-            print(f"{y = }")
             y = y.replace("\\n", "\n")
             y = y.replace("\\0", " ")
             embed = discord.Embed(description=y)
@@ -106,6 +101,21 @@ async def trim(trimed):
             return trimed
 
 
+#####################
+### SUPER TRIMMER ###
+#####################
+async def super_trim(trimed):
+    if isinstance(trimed, list):
+        if len(trimed) > 1:
+            return trimed[-1][0]
+        return await super_trim(trimed[0])
+    else:
+        if isinstance(trimed, discord.Embed):
+            return trimed.description
+        else:
+            return trimed
+
+
 #################
 ### EXE IMAGE ###
 #################
@@ -116,13 +126,39 @@ async def exe_image(image):
     return output
 
 
+####################
+### SUB EXECUTER ###
+####################
+# DO NOT EXECUTE THIS, IT'S EXCLUVIVE FOR FUNCTIONS LIKE !ffor
+async def sub_exemac(args):
+    try:
+        try:
+            args = await conversor(args)
+            print(f"{args = }")
+            grammar_compilation = macro_grammar.parse(args)
+        except (lark.UnexpectedCharacters, lark.LarkError) as error:
+            indicator = error.get_context(args)
+            # print(error.__traceback__)
+            traceback.print_tb(error.__traceback__)
+            raise InvalidCharacter(indicator)
+
+        cmd = await Compiler(macrocache).transform(grammar_compilation)
+
+        await macrocache["database"].clear_cache(id=macrocache["author_id"])
+
+        return cmd
+    except Exception as e:
+        print(e)
+        return (e,)
+
+
 macro_grammar = Lark(
     r"""
-    chain_command: command (ws command)*
+    chain_command: (command (ws command)* | ffor)
     command.2: (fif | command3)
     command2.2: (fif2 | command4)
     command3.2: (echo | command4)
-    command4.2: (variable | roll | math | select | image)
+    command4.2: (variable | roll | math | select | image | hide)
 
     variable: "$" command
 
@@ -137,20 +173,23 @@ macro_grammar = Lark(
     select.4: "!select" " " finput
     image.4: "!image" " " string
     execute.4: "!exe" " " sub_command
-    
+
+    hide.5: "!hide" " " command
+    ffor: "!for" " " INT " - " sub_string
+
     listing.4: "!list" " " finput
     showtype.4: OPTIONS
     OPTIONS: "0" | "1" | "2"
 
-    comparator.3: command2 " " comparator_indx
+    comparator.3: (command2 | use_var) " " comparator_indx
     comparator_indx: major | minor | equalmajor | equalminor | different | equal | inlist
-    major: ">" (content | number | command2 | execute | listing)
-    minor: "<" (content | number | command2 | execute | listing)
-    equalmajor: ">=" (content | number | command2 | execute | listing)
-    equalminor: "<=" (content | number | command2 | execute | listing)
-    different: "!=" (content | number | command2 | execute | listing)
-    equal: "==" (content | number | command2 | execute | listing)
-    inlist: "in" (content | number | command2 | execute | listing)
+    major: ">" (content | number | command2 | execute | listing | use_var)
+    minor: "<" (content | number | command2 | execute | listing | use_var)
+    equalmajor: ">=" (content | number | command2 | execute | listing | use_var)
+    equalminor: "<=" (content | number | command2 | execute | listing | use_var)
+    different: "!=" (content | number | command2 | execute | listing | use_var)
+    equal: "==" (content | number | command2 | execute | listing | use_var)
+    inlist: "in" (content | number | command2 | execute | listing | use_var)
 
     use_var.2: "&" INT
     sub_command: string
@@ -168,6 +207,7 @@ macro_grammar = Lark(
     line: "l"
 
     string: CHAR_CHAIN+
+    sub_string: SUB_CHAR_CHAIN+
     args: EXPRESSIONS+
     
     EXPRESSIONS: CHAR_EXP+
@@ -178,7 +218,9 @@ macro_grammar = Lark(
                 | "+" | "-" | "*" | "/" | "."
                 | "(" | ")" | "#"
     CHAR_CHAIN: CHAR+
+    SUB_CHAR_CHAIN: SUB_CHAR+
     CHAR: /[^(){}\[\] ]/
+    SUB_CHAR: CHAR | /[(){}\[\] ]/
     number: SIGNED_NUMBER 
     ws: WS
 
@@ -342,8 +384,6 @@ class Compiler(AsyncTransformer):
         return result
 
     async def roll(self, cmd):
-        print(f"{cmd = }")
-
         rl = cmd
 
         if len(cmd) > 1:
@@ -409,70 +449,94 @@ class Compiler(AsyncTransformer):
         comp1 = cmd[0]
         comp2 = cmd[1]
         while True:
-            if (
-                isinstance(comp1, str)
-                or isinstance(comp1, float)
-                or isinstance(comp1, str)
-                or len(comp1) > 1
-            ):
+            if isinstance(comp1, str) or isinstance(comp1, float) or isinstance(comp1, int):
+                break
+            if len(comp1) > 1:
                 break
             comp1 = comp1[0]
 
         if comp2[0] == ">":
+            if isinstance(comp1, float) or isinstance(comp1, int):
+                if comp1 > comp2[1]:
+                    return True
+                return False
             if len(comp1) > 1 and not isinstance(comp1, str):
                 comp1 = comp1[1]
-            if comp1 > comp2[1]:
-                return True
-            else:
+                if comp1 > comp2[1]:
+                    return True
                 return False
+            return False
 
         elif comp2[0] == "<":
+            if isinstance(comp1, float) or isinstance(comp1, int):
+                if comp1 < comp2[1]:
+                    return True
+                return False
             if len(comp1) > 1 and not isinstance(comp1, str):
                 comp1 = comp1[1]
-            if comp1 < comp2[1]:
-                return True
-            else:
+                if comp1 < comp2[1]:
+                    return True
                 return False
+            return False
 
         elif comp2[0] == ">=":
+            if isinstance(comp1, float) or isinstance(comp1, int):
+                if comp1 >= comp2[1]:
+                    return True
+                return False
             if len(comp1) > 1 and not isinstance(comp1, str):
                 comp1 = comp1[1]
-            if comp1 >= comp2[1]:
-                return True
-            else:
+                if comp1 >= comp2[1]:
+                    return True
                 return False
+            return False
 
         elif comp2[0] == "<=":
+            if isinstance(comp1, float) or isinstance(comp1, int):
+                if comp1 <= comp2[1]:
+                    return True
+                return False
             if len(comp1) > 1 and not isinstance(comp1, str):
                 comp1 = comp1[1]
-            if comp1 <= comp2[1]:
-                return True
-            else:
+                if comp1 <= comp2[1]:
+                    return True
                 return False
+            return False
 
         elif comp2[0] == "==":
-            if len(comp1) > 1 and not isinstance(comp1, str):
-                comp1 = comp1[1]
-            if comp1 == comp2[1]:
-                return True
-            else:
+            if isinstance(comp1, float) or isinstance(comp1, int) or isinstance(comp1, str):
+                if comp1 == comp2[1]:
+                    return True
                 return False
+            if len(comp1) > 1:
+                comp1 = comp1[1]
+                if comp1 == comp2[1]:
+                    return True
+                return False
+            return False
 
         elif comp2[0] == "!=":
-            if len(comp1) > 1 and not isinstance(comp1, str):
-                comp1 = comp1[1]
-            if comp1 != comp2[1]:
-                return True
-            else:
+            if isinstance(comp1, float) or isinstance(comp1, int) or isinstance(comp1, str):
+                if comp1 != comp2[1]:
+                    return True
                 return False
+            if len(comp1) > 1:
+                comp1 = comp1[1]
+                if comp1 != comp2[1]:
+                    return True
+                return False
+            return False
 
         elif comp2[0] == "in":
-            if len(comp1) > 1 and not isinstance(comp1, str):
-                comp1 = comp1[1]
-            if comp1 == comp2[1]:
-                return True
-            else:
+            if isinstance(comp1, float) or isinstance(comp1, int) or isinstance(comp1, str):
+                if comp1 in comp2[1]:
+                    return True
                 return False
+            if len(comp1) > 1:
+                if comp1 in comp2[1]:
+                    return True
+                return False
+            return False
 
     async def comparator_indx(self, cmd):
         (cindx,) = cmd
@@ -548,8 +612,14 @@ class Compiler(AsyncTransformer):
     async def variable(self, cmd):
         print("Registering variable")
         var = cmd
+        print(f"{var = }")
         while True:
             var = var[0]
+            if isinstance(var, str) or isinstance(var, float) or isinstance(var, int):
+                break
+            if len(var) == 2:
+                var = var[1]
+                break
             if len(var) > 1:
                 piv = ""
                 for i in var:
@@ -570,16 +640,17 @@ class Compiler(AsyncTransformer):
                         else:
                             piv = piv + f" {str(i)}"
                     var = piv
-            if isinstance(var, str):
-                break
-        await macrocache["database"].cache_register(id=macrocache["author_id"], var=var)
+        await macrocache["database"].cache_register(id=macrocache["author_id"], var=str(var))
         return var
 
     async def use_var(self, cmd):
         print("Gathering Variable")
         var_pos = int(cmd[0])
         variables = await macrocache["database"].get_cache(id=macrocache["author_id"])
-        use_var = variables[var_pos]
+        try:
+            use_var = float(variables)
+        except:
+            use_var = variables[var_pos]
         return use_var
 
     async def sub_command(self, cmd):
@@ -626,7 +697,6 @@ class Compiler(AsyncTransformer):
         return exp
 
     async def key_cont(self, cmd):
-        print(f"{cmd = }")
         kcont = cmd
         if isinstance(kcont, list):
             while True:
@@ -646,6 +716,15 @@ class Compiler(AsyncTransformer):
         return inp
 
     async def string(self, cmd):
+        command_string = str()
+        for i in range(0, len(cmd)):
+            if i == 0:
+                command_string += cmd[i]
+            else:
+                command_string += " " + cmd[i]
+        return command_string
+
+    async def sub_string(self, cmd):
         command_string = str()
         for i in range(0, len(cmd)):
             if i == 0:
@@ -695,6 +774,27 @@ class Compiler(AsyncTransformer):
 
         return text
 
+    async def hide(self, cmd):
+        return ""
+
+    async def ffor(self, cmd):
+        final_range = int(cmd[0])
+        command = str(cmd[1])
+        print(f"{final_range = } <-> {command = }")
+        result = ""
+        for i in range(0, final_range):
+            print(f"{command = }")
+            message = await super_trim(await sub_exemac(command))
+            if isinstance(message, discord.Embed):
+                message = message.description
+
+            if i == final_range - 1:
+                result = result + str(message)
+            else:
+                result = result + str(message) + "\n"
+
+        return result
+
     async def black(self, cmd):
         return "b"
 
@@ -727,7 +827,6 @@ class Macro:
         macrocache["start with ->"] = starter
 
         try:
-            print(f"{args = }")
             try:
                 args = await conversor(args)
                 print(f"{args = }")
@@ -740,7 +839,7 @@ class Macro:
 
             cmd = await Compiler(macrocache).transform(grammar_compilation)
 
-            # await macrocache["database"].clear_cache(id=macrocache["author_id"])
+            await macrocache["database"].clear_cache(id=macrocache["author_id"])
 
             return cmd
         except Exception as e:
